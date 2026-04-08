@@ -3,15 +3,16 @@
 Plot validation-only consistency summaries to assess whether fixing initialization
 improves replicate stability, and by how much.
 
-Uses Goal 1 selected variants from the finished validation run and compares:
-  1. screen                : split + init + training randomness varying
-  2. fixed_init_pooled     : pooled fixed-init eval runs across split blocks
-  3. fixed_init_within_blk : average within-split-block variability where split
-                             and init are both fixed and only training randomness varies
+Produces two figures:
+  1. fig_validation_cindex_ci_all_models.png
+     C-index CI half-width for ALL models (including RSF, LinearCox, L-LSPIN, L-Concrete).
+  2. fig_validation_init_consistency.png
+     Khard CI half-width + Affinity Corr for gated models only.
 
 Note:
-  Validation does not save clustering Rand index / ARI. The third panel uses
-  pairwise gate-affinity correlation as the saved proxy for gate-consistency.
+  RSF has no init artifact so it only appears in the "Screen" stage.
+  Validation does not save clustering Rand index / ARI. The affinity panel uses
+  pairwise gate-affinity correlation as a proxy.
 """
 from __future__ import annotations
 
@@ -38,8 +39,8 @@ def _parse_args() -> argparse.Namespace:
 
 def _norm_family(x: str) -> str:
     x = str(x)
-    if x == "LSPIN":
-        return "HardSigmoid"
+    if x in {"HardSigmoid", "LSPIN"}:
+        return "LSPIN"
     return x
 
 
@@ -55,19 +56,39 @@ def _variant_label(row: pd.Series) -> str:
     fam = _norm_family(row["model_family"])
     if fam == "MLP":
         return "MLP"
-    if row["goal1_group"] == "nosmooth":
+    if fam == "RSF":
+        return "RSF"
+    if fam == "LinearCox":
+        return "Linear Cox"
+    if fam == "L-LSPIN":
+        return "L-LSPIN\nSmooth"
+    if fam == "L-Concrete":
+        return "L-Concrete\nSmooth"
+    grp = str(row.get("goal1_group", ""))
+    if grp == "nosmooth":
         return f"{fam}\nNo Smooth"
-    if row["goal1_group"] == "smooth":
+    if grp == "smooth":
         return f"{fam}\nSmooth"
-    if row["goal1_group"] == "alt_sigma":
+    if grp == "alt_sigma":
         return f"{fam}\nAlt Sigma"
     return fam
 
 
-def _family_order_key(label: str) -> tuple[int, str]:
-    fam_rank = {"HardSigmoid": 0, "Concrete": 1, "MLP": 2}
+_FAMILY_RANK = {
+    "LSPIN": 0,
+    "Concrete": 1,
+    "L-LSPIN": 2,
+    "L-Concrete": 3,
+    "MLP+STG": 4,
+    "MLP": 5,
+    "LinearCox": 6,
+    "RSF": 7,
+}
+
+
+def _family_order_key(label: str) -> tuple:
     fam = label.split("\n", 1)[0]
-    return (fam_rank.get(fam, 99), label)
+    return (_FAMILY_RANK.get(fam, 99), label)
 
 
 def _ci95_half_width(series: pd.Series) -> float:
@@ -78,11 +99,35 @@ def _ci95_half_width(series: pd.Series) -> float:
 
 
 def _selected_variants(run_dir: Path) -> pd.DataFrame:
-    summ = pd.read_csv(run_dir / "goal1_fixed_init_summary.csv")
-    keep = summ[["dataset", "variant_key", "variant_label", "model_family", "goal1_group"]].drop_duplicates()
+    """Return all variants to plot: fixed-init eval variants + screen-only RSF."""
+    rows = []
+
+    fixed_path = run_dir / "goal1_fixed_init_summary.csv"
+    if fixed_path.exists():
+        summ = pd.read_csv(fixed_path)
+        keep = summ[["dataset", "variant_key", "variant_label", "model_family", "goal1_group"]].drop_duplicates()
+        rows.append(keep)
+
+    # RSF and any other screen-only model not already captured
+    screen_path = run_dir / "screen_summary.csv"
+    if screen_path.exists():
+        screen = pd.read_csv(screen_path)
+        screen_g1 = screen[screen["experiment"] == "goal1"].copy()
+        screen_extra = screen_g1[
+            screen_g1["model_family"].isin(["RSF"])
+        ][["dataset", "variant_key", "variant_label", "model_family", "goal1_group"]].drop_duplicates()
+        rows.append(screen_extra)
+
+    if not rows:
+        return pd.DataFrame()
+
+    keep = pd.concat(rows, ignore_index=True).drop_duplicates(subset=["dataset", "variant_key"])
     keep["model_family"] = keep["model_family"].map(_norm_family)
     keep["plot_label"] = keep.apply(_variant_label, axis=1)
     return keep
+
+
+_GATED_FAMILIES = {"LSPIN", "Concrete", "L-LSPIN", "L-Concrete", "MLP+STG"}
 
 
 def _summarize_consistency(run_dir: Path) -> pd.DataFrame:
@@ -258,38 +303,96 @@ def _summarize_consistency(run_dir: Path) -> pd.DataFrame:
     return out.sort_values(["dataset", "metric", "plot_label", "stage_order"]).reset_index(drop=True)
 
 
-def _plot(summary: pd.DataFrame, outpath: Path) -> None:
+_STAGE_PALETTE = {
+    _stage_label("screen"): "#9ecae1",
+    _stage_label("fixed_init_pooled"): "#74c476",
+    _stage_label("fixed_init_within_block"): "#fd8d3c",
+}
+_STAGE_ORDER = [
+    _stage_label("screen"),
+    _stage_label("fixed_init_pooled"),
+    _stage_label("fixed_init_within_block"),
+]
+
+
+def _plot_cindex_all_models(summary: pd.DataFrame, outpath: Path) -> None:
+    """2-panel figure (KIPAN / BRCA): C-index CI half-width for all models."""
     sns.set_theme(style="whitegrid", context="talk")
-    fig, axes = plt.subplots(2, 3, figsize=(32, 14), sharex=False)
-
     datasets = ["kipan", "brca"]
-    metrics = ["Test C-index", "Mean Khard", "Affinity Corr"]
-    stage_order = [
-        _stage_label("screen"),
-        _stage_label("fixed_init_pooled"),
-        _stage_label("fixed_init_within_block"),
-    ]
+    fig, axes = plt.subplots(1, 2, figsize=(28, 8), sharey=False)
 
-    palette = {
-        _stage_label("screen"): "#9ecae1",
-        _stage_label("fixed_init_pooled"): "#74c476",
-        _stage_label("fixed_init_within_block"): "#fd8d3c",
-    }
+    for c, dataset in enumerate(datasets):
+        ax = axes[c]
+        sub = summary[
+            (summary["dataset"] == dataset) & (summary["metric"] == "Test C-index")
+        ].copy()
+        order = sorted(sub["plot_label"].unique(), key=_family_order_key)
+        sns.barplot(
+            data=sub,
+            x="plot_label",
+            y="ci95_half_width",
+            hue="stage_label",
+            order=order,
+            hue_order=_STAGE_ORDER,
+            palette=_STAGE_PALETTE,
+            ax=ax,
+        )
+        ax.set_title(f"{dataset.upper()} | Test C-index CI half-width (all models)", fontsize=13)
+        ax.set_xlabel("")
+        ax.set_ylabel("95% CI half-width")
+        ax.tick_params(axis="x", rotation=30)
+        if c == 0:
+            ax.legend(title="", fontsize=11)
+        else:
+            ax.legend_.remove()
+
+    fig.suptitle(
+        "Goal 1 Validation: C-index Consistency Under Initialization Controls (all models)\n"
+        "Screen varies split + initialization; fixed-init eval pools split blocks; "
+        "within-block estimates isolate training randomness only.",
+        y=1.02,
+    )
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _plot_gated_khard_affinity(summary: pd.DataFrame, outpath: Path) -> None:
+    """2×2 figure: Khard CI + Affinity Corr for gated models only (KIPAN / BRCA rows)."""
+    sns.set_theme(style="whitegrid", context="talk")
+    datasets = ["kipan", "brca"]
+    metrics = ["Mean Khard", "Affinity Corr"]
+    fig, axes = plt.subplots(2, 2, figsize=(26, 14), sharex=False)
+
+    # Filter to gated families only
+    gated_labels_mask = summary["plot_label"].apply(
+        lambda lbl: lbl.split("\n", 1)[0] in _GATED_FAMILIES
+    )
+    gated_summary = summary[gated_labels_mask].copy()
 
     for r, dataset in enumerate(datasets):
         for c, metric in enumerate(metrics):
             ax = axes[r][c]
-            sub = summary[(summary["dataset"] == dataset) & (summary["metric"] == metric)].copy()
+            sub = gated_summary[
+                (gated_summary["dataset"] == dataset) & (gated_summary["metric"] == metric)
+            ].copy()
             order = sorted(sub["plot_label"].unique(), key=_family_order_key)
             y_col = "mean_value" if metric == "Affinity Corr" else "ci95_half_width"
+            hue_order = (
+                [_STAGE_ORDER[0], _STAGE_ORDER[1]]  # Affinity Corr: screen + fixed_init_pooled only
+                if metric == "Affinity Corr"
+                else _STAGE_ORDER
+            )
+            present_stages = sub["stage_label"].unique()
+            hue_order = [s for s in hue_order if s in present_stages]
             sns.barplot(
                 data=sub,
                 x="plot_label",
                 y=y_col,
                 hue="stage_label",
                 order=order,
-                hue_order=stage_order,
-                palette=palette,
+                hue_order=hue_order,
+                palette=_STAGE_PALETTE,
                 ax=ax,
             )
             ax.set_title(f"{dataset.upper()} | {metric}")
@@ -300,15 +403,15 @@ def _plot(summary: pd.DataFrame, outpath: Path) -> None:
                 ax.set_ylabel("CI half-width")
             ax.tick_params(axis="x", rotation=25)
             if r == 0 and c == 0:
-                ax.legend(title="")
-            else:
+                ax.legend(title="", fontsize=11)
+            elif ax.legend_:
                 ax.legend_.remove()
 
     fig.suptitle(
-        "Validation Goal 1 Consistency Under Initialization Controls\n"
+        "Goal 1 Validation: Khard & Affinity Consistency Under Initialization Controls (gated models only)\n"
         "Screen varies split + initialization; fixed-init eval pools split blocks; "
-        "within-block estimates isolate runs where split and initialization are both fixed.\n"
-        "Validation does not save clustering Rand index, so the rightmost panels use affinity correlation instead.",
+        "within-block estimates isolate training randomness only.\n"
+        "Rightmost panels use pairwise gate-affinity correlation (clustering Rand index not saved in validation).",
         y=1.02,
     )
     fig.tight_layout()
@@ -322,13 +425,17 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     summary = _summarize_consistency(args.run_dir)
-    fig_path = out_dir / "fig_validation_init_consistency.png"
     summary_path = out_dir / "validation_init_consistency_summary.csv"
-
-    _plot(summary, fig_path)
     summary.to_csv(summary_path, index=False)
 
-    print(f"Saved {fig_path}")
+    cindex_path = out_dir / "fig_validation_cindex_ci_all_models.png"
+    gated_path = out_dir / "fig_validation_init_consistency.png"
+
+    _plot_cindex_all_models(summary, cindex_path)
+    _plot_gated_khard_affinity(summary, gated_path)
+
+    print(f"Saved {cindex_path}")
+    print(f"Saved {gated_path}")
     print(f"Saved {summary_path}")
 
 

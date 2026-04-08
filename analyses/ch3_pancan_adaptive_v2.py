@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 """
-Chapter 3 TCGA Pan-Cancer adaptive sweep v2 — warm-start replicates.
+Chapter 3 TCGA Pan-Cancer adaptive sweep v2 — independent-init phase-2 replicates.
 
-Identical two-phase structure to v1, with one key change:
-  Phase 2 replicates all share the same weight initialisation.
-
-  After phase 1, for each selected promising config, we identify the
-  "anchor" rep — the phase-1 replicate whose mean_Khard is closest to
-  the midpoint of [khard_min, khard_max].  The anchor's saved state_dict
-  (gate + predictor weights) is loaded into the model before training for
-  every phase-2 replicate of that config.  set_all_seeds(s) is called
-  BEFORE run_one_model, so batch-ordering randomness still varies per rep
-  while weight initialisation is shared.
+Two-phase adaptive design aligned with the current KIPAN/BRCA runs:
+  Phase 1: all configs x n_phase1_reps (default 3) - screening.
+  Phase 2: one family-level matched pair per model family (nosmooth + smooth)
+           x remaining reps, all from fresh random initialization.
 
 Grid (PanCan adaptive v2, 80 configs total):
   LSPIN:       5 lambdas × 2 sigmas × 4 smooth = 40
@@ -41,10 +35,8 @@ import numpy as np
 import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-LSPIN_ROOT       = Path("/banach2/wes/lspin-pytorch")
-CLEANED          = LSPIN_ROOT / "cleaned_analyses"
 PAPER_ROOT       = Path(__file__).resolve().parents[1]
-PANCAN_DATA_DEFAULT = LSPIN_ROOT / "runs" / "tcga_pancan_xena_20260330_top5000"
+PANCAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "tcga_pancan_xena_20260330_top5000"
 RESULTS_DEFAULT     = PAPER_ROOT / "data" / "runs" / "ch3_pancan_adaptive_v2"
 
 
@@ -72,7 +64,6 @@ def _worker(
     risk_top_frac: float,
     cluster_n_clusters: int,
     global_freq_threshold: float,
-    anchor_sd_paths: Optional[Dict[str, str]] = None,
 ) -> str:
     import sys as _sys
     _sds_src = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
@@ -87,11 +78,10 @@ def _worker(
     from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
     import sparsedeepsurv as sds
 
-    # Build partial_dir early so we can write state_dicts incrementally
+    # Build partial_dir early so logs/partials are written incrementally
     partial_dir = Path(results_dir_str) / f"_partial_p{phase}_worker{worker_id}"
     partial_dir.mkdir(parents=True, exist_ok=True)
-    if phase == 1:
-        (partial_dir / "state_dicts").mkdir(exist_ok=True)
+    (partial_dir / "state_dicts").mkdir(exist_ok=True)
     worker_log_path = partial_dir / "worker.log"
 
     def log(msg: str) -> None:
@@ -149,24 +139,11 @@ def _worker(
             for k in range(rep_start, rep_end)
         ]
 
-        # Look up anchor state_dict path for phase-2 warm start
-        anchor_sd_path: Optional[str] = None
-        if phase == 2 and anchor_sd_paths is not None:
-            key = f"{family_label}|{gate_sigma}|{lam}|{smooth}"
-            anchor_sd_path = anchor_sd_paths.get(key)
-            if anchor_sd_path is not None and not Path(anchor_sd_path).exists():
-                log(
-                    f"[worker {worker_id}|p2] WARNING: anchor SD missing, "
-                    f"falling back to random init: {anchor_sd_path}"
-                )
-                anchor_sd_path = None
-
         t0 = time.time()
-        warm_tag = " [warm-start]" if (phase == 2 and anchor_sd_path) else ""
         log(
             f"[worker {worker_id}|p{phase}] [{cfg_i + 1}/{n_cfg}] "
             f"{family_label} σ={gate_sigma} λ={lam:.4g} smooth={smooth:.4g} "
-            f"reps={rep_start}..{rep_end - 1}{warm_tag}",
+            f"reps={rep_start}..{rep_end - 1}",
         )
 
         aff_vecs:     List[np.ndarray] = []
@@ -196,17 +173,15 @@ def _worker(
                     weight_decay=weight_decay,
                     batch_size=batch_size,
                     max_epochs=max_epochs,
-                    init_state_dict_path=anchor_sd_path,
                     seed=s,
                 )
             except Exception as exc:
                 log(f"[worker {worker_id}|p{phase}]   seed={s} FAILED: {exc}")
                 continue
 
-            # Save state_dict for phase-1 anchor selection
-            if phase == 1:
-                sd_path = partial_dir / "state_dicts" / f"cfg{global_cfg_idx}_rep{rep_id}.pt"
-                torch.save(model.state_dict(), sd_path)
+            # Keep checkpoints for post hoc gate-interpretability analyses.
+            sd_path = partial_dir / "state_dicts" / f"cfg{global_cfg_idx}_rep{rep_id}.pt"
+            torch.save(model.state_dict(), sd_path)
 
             _, g_det, hard_g, _ = sds.get_gates(
                 model, Xt_test, device=device, hard_threshold=0.5, batch_size=512,
@@ -328,7 +303,6 @@ from ch3_kipan_adaptive_v2 import (  # noqa: E402
     _load_partials,
     _select_promising,
     _rebuild_configs_for_phase2,
-    _select_anchor_per_config,
     _select_showcase_configs,
     _post_process,
     _Tee,
@@ -343,7 +317,6 @@ def _dispatch_phase(
     gpus: List[int],
     args,
     results_dir: Path,
-    anchor_sd_paths: Optional[Dict[str, str]] = None,
 ) -> List[Path]:
     """Distribute configs across GPUs and return list of partial dirs."""
     buckets: List[List[Dict]] = [[] for _ in gpus]
@@ -374,7 +347,6 @@ def _dispatch_phase(
         risk_top_frac=args.risk_top_frac,
         cluster_n_clusters=args.cluster_n_clusters,
         global_freq_threshold=args.global_freq_threshold,
-        anchor_sd_paths=anchor_sd_paths,
     )
 
     import multiprocessing
@@ -442,7 +414,7 @@ def _build_configs(args) -> List[Dict]:
 
 def _parse():
     p = argparse.ArgumentParser(
-        description="TCGA Pan-Cancer adaptive sweep v2 (warm-start): 3-rep phase 1 → warm-start phase 2"
+        description="TCGA Pan-Cancer adaptive sweep v2: 3-rep phase 1 → 9 more random-init reps on a matched pair per family"
     )
     p.add_argument("--outdir",      type=Path, default=PANCAN_DATA_DEFAULT)
     p.add_argument("--results-dir", type=Path, default=RESULTS_DEFAULT)
@@ -454,7 +426,7 @@ def _parse():
     p.add_argument("--n-total-reps",  type=int, default=12,
                    help="Total seeds per promising config (phase 1 + phase 2)")
     p.add_argument("--top-n-promising", type=int, default=1,
-                   help="Retained for compatibility; phase 2 now carries one matched pair per family")
+                   help="Retained for compatibility; phase 2 now carries one relative-Khard-matched pair per family")
 
     p.add_argument("--patience",     type=int,   default=60)
     p.add_argument("--lr",           type=float, default=1e-2)
@@ -511,8 +483,8 @@ def main():
     all_configs = _build_configs(args)
     print(f"[main] {len(all_configs)} total configs in grid (PanCan)")
     print(f"[main] GPUs: {args.gpus}")
-    print(f"[main] Phase 1: {args.n_phase1_reps} reps/config (state_dicts saved for warm start), "
-          f"Phase 2: {args.n_total_reps - args.n_phase1_reps} more reps on one matched pair per family")
+    print(f"[main] Phase 1: {args.n_phase1_reps} reps/config, "
+          f"Phase 2: {args.n_total_reps - args.n_phase1_reps} more reps on one relative-Khard-matched pair per family")
     print(f"[main] Khard showcase band: [{args.khard_min}, {args.khard_max}]")
     print(f"[main] Results → {results_dir}", flush=True)
 
@@ -554,14 +526,6 @@ def main():
 
     pd.DataFrame(promising_rows).to_csv(results_dir / "promising_configs_selected.csv", index=False)
 
-    # ── Select warm-start anchors ─────────────────────────────────────────────
-    khard_target = (args.khard_min + args.khard_max) / 2.0
-    anchor_sd_paths: Dict[str, str] = {}
-    if not args.post_process_only:
-        print(f"\n[main] Selecting anchor state_dicts (khard_target={khard_target:.0f}) ...", flush=True)
-        anchor_sd_paths = _select_anchor_per_config(p1_dirs, promising_rows, khard_target)
-        print(f"[main] Anchors found: {len(anchor_sd_paths)} / {len(promising_rows)} configs", flush=True)
-
     # ── Phase 2 ───────────────────────────────────────────────────────────────
     n_p2 = args.n_total_reps - args.n_phase1_reps
     p2_dirs = sorted(results_dir.glob("_partial_p2_worker*"))
@@ -570,14 +534,13 @@ def main():
         if p2_dirs:
             print(f"[main] Found {len(p2_dirs)} existing phase-2 partial dirs — skipping phase 2")
         elif n_p2 > 0 and p2_configs:
-            print(f"\n[main] === Phase 2: {len(p2_configs)} configs × {n_p2} more reps (warm-start) ===",
+            print(f"\n[main] === Phase 2: {len(p2_configs)} configs × {n_p2} more reps (random init) ===",
                   flush=True)
             t0 = time.time()
             p2_dirs = _dispatch_phase(
                 p2_configs, phase=2,
                 rep_start=args.n_phase1_reps, rep_end=args.n_total_reps,
                 gpus=args.gpus, args=args, results_dir=results_dir,
-                anchor_sd_paths=anchor_sd_paths,
             )
             print(f"[main] Phase 2 done in {(time.time() - t0) / 60:.1f} min", flush=True)
         else:

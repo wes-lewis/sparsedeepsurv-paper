@@ -49,9 +49,8 @@ import numpy as np
 import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-LSPIN_ROOT        = Path("/banach2/wes/lspin-pytorch")
 PAPER_ROOT        = Path(__file__).resolve().parents[1]
-BRCA_DATA_DEFAULT = LSPIN_ROOT / "runs" / "tcga_brca20260214_001423"
+BRCA_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "tcga_brca20260214_001423"
 RESULTS_DEFAULT   = PAPER_ROOT / "data" / "runs" / "ch3_brca_adaptive_v2"
 
 

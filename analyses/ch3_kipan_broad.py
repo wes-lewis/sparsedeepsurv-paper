@@ -31,7 +31,7 @@ import pandas as pd
 LSPIN_ROOT = Path("/banach2/wes/lspin-pytorch")
 CLEANED = LSPIN_ROOT / "cleaned_analyses"
 PAPER_ROOT = Path(__file__).resolve().parents[1]
-KIPAN_DATA_DEFAULT = LSPIN_ROOT / "runs" / "kipan_20260209_213604"
+KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"
 RESULTS_DEFAULT = PAPER_ROOT / "data" / "runs" / "ch3_kipan_broad_knn8"
 
 _SDS_SRC = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
@@ -60,6 +60,7 @@ def _worker(
     lspin_temperature: float,
     concrete_gate_sigma: float,
     concrete_temperature: float,
+    concrete_mode: str,
     risk_top_frac: float,
     cluster_n_clusters: int,
     global_freq_threshold: float,
@@ -161,6 +162,7 @@ def _worker(
                     weight_decay=weight_decay,
                     batch_size=batch_size,
                     max_epochs=max_epochs,
+                    concrete_mode=(concrete_mode if gate_type == "concrete" else "relaxed"),
                 )
             except Exception as exc:
                 print(f"[worker {worker_id}]   seed={s} FAILED: {exc}", flush=True)
@@ -268,6 +270,7 @@ def _post_process(results_dir: Path, args) -> None:
     rank_top_configs        = sds_summary.rank_top_configs
     save_smoothing_legend   = sds_summary.save_smoothing_legend
     save_family_loess       = sds_summary.save_family_loess
+    save_broad_multiplot    = sds_summary.save_broad_multiplot
 
     # Observation binned figures module — imports may vary by version; make optional
     import sys as _sys
@@ -342,6 +345,19 @@ def _post_process(results_dir: Path, args) -> None:
                 frac=float(args.lowess_frac),
             )
 
+    # 2-row × 6-col multiplot: LSPIN/Concrete rows, one panel per metric
+    try:
+        save_broad_multiplot(
+            merged,
+            dataset_label="KIPAN",
+            outpath=results_dir / "fig_broad_multiplot_smoothing_vs_khard.png",
+            x_min=float(args.plot_x_min),
+            x_max=float(args.plot_x_max),
+            frac=float(args.lowess_frac),
+        )
+    except Exception as exc:
+        print(f"[post-process] broad multiplot failed (non-fatal): {exc}", flush=True)
+
     # Observation-binned tradeoff figures (same as original broad script)
     if _have_obs_figs:
         try:
@@ -384,6 +400,7 @@ def _parse():
     p.add_argument("--lspin-temperature",   type=float, default=0.5)
     p.add_argument("--concrete-gate-sigma", type=float, default=0.1)
     p.add_argument("--concrete-temperature",type=float, default=0.3)
+    p.add_argument("--concrete-mode", choices=["relaxed", "ste"], default="ste")
     # Lambda grids (same as original defaults)
     p.add_argument("--positive-smooth-grid", type=float, nargs="+",
                    default=[0.05, 0.1, 0.15, 0.2])
@@ -487,6 +504,7 @@ if __name__ == "__main__":
         lspin_temperature=args.lspin_temperature,
         concrete_gate_sigma=args.concrete_gate_sigma,
         concrete_temperature=args.concrete_temperature,
+        concrete_mode=args.concrete_mode,
         risk_top_frac=args.risk_top_frac,
         cluster_n_clusters=args.cluster_n_clusters,
         global_freq_threshold=args.global_freq_threshold,

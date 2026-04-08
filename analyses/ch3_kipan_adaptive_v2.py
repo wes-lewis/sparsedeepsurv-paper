@@ -43,10 +43,8 @@ import numpy as np
 import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-LSPIN_ROOT       = Path("/banach2/wes/lspin-pytorch")
-CLEANED          = LSPIN_ROOT / "cleaned_analyses"
 PAPER_ROOT       = Path(__file__).resolve().parents[1]
-KIPAN_DATA_DEFAULT = LSPIN_ROOT / "runs" / "kipan_20260209_213604"
+KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"
 RESULTS_DEFAULT    = PAPER_ROOT / "data" / "runs" / "ch3_kipan_adaptive_v2"
 
 
@@ -88,11 +86,10 @@ def _worker(
     from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
     import sparsedeepsurv as sds
 
-    # Build partial_dir early so we can write state_dicts incrementally
+    # Build partial_dir early so we can write state_dicts incrementally.
     partial_dir = Path(results_dir_str) / f"_partial_p{phase}_worker{worker_id}"
     partial_dir.mkdir(parents=True, exist_ok=True)
-    if phase == 1:
-        (partial_dir / "state_dicts").mkdir(exist_ok=True)
+    (partial_dir / "state_dicts").mkdir(exist_ok=True)
     worker_log_path = partial_dir / "worker.log"
 
     def log(msg: str) -> None:
@@ -190,10 +187,9 @@ def _worker(
                 log(f"[worker {worker_id}|p{phase}]   seed={s} FAILED: {exc}")
                 continue
 
-            # Save state_dict for phase-1 anchor selection
-            if phase == 1:
-                sd_path = partial_dir / "state_dicts" / f"cfg{global_cfg_idx}_rep{rep_id}.pt"
-                torch.save(model.state_dict(), sd_path)
+            # Keep checkpoints for post hoc gate-interpretability analyses.
+            sd_path = partial_dir / "state_dicts" / f"cfg{global_cfg_idx}_rep{rep_id}.pt"
+            torch.save(model.state_dict(), sd_path)
 
             _, g_det, hard_g, _ = sds.get_gates(
                 model, Xt_test, device=device, hard_threshold=0.5, batch_size=512,

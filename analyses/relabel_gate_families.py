@@ -2,7 +2,7 @@
 """
 Rewrite finished CSV outputs to use the clearer gate-family names:
 
-  LSPIN     -> HardSigmoid
+  HardSigmoid -> LSPIN
 
 This script is intentionally post-hoc and file-based so we can update already
 finished run directories without retraining anything.
@@ -16,16 +16,16 @@ import pandas as pd
 
 
 EXACT_VALUE_MAP = {
-    "LSPIN": "HardSigmoid",
+    "HardSigmoid": "LSPIN",
 }
 
 STRING_REPLACEMENTS = [
-    ("goal0_lspin_", "goal0_hardsigmoid_"),
-    ("goal1_lspin_", "goal1_hardsigmoid_"),
-    ("_lspin_", "_hardsigmoid_"),
-    ("LSPIN ", "HardSigmoid "),
-    ("LSPIN-", "HardSigmoid-"),
-    ("LSPIN", "HardSigmoid"),
+    ("goal0_hardsigmoid_", "goal0_lspin_"),
+    ("goal1_hardsigmoid_", "goal1_lspin_"),
+    ("_hardsigmoid_", "_lspin_"),
+    ("HardSigmoid ", "LSPIN "),
+    ("HardSigmoid-", "LSPIN-"),
+    ("HardSigmoid", "LSPIN"),
 ]
 
 

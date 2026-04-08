@@ -32,8 +32,8 @@ def _parse_args() -> argparse.Namespace:
 
 def _norm_family(x: str) -> str:
     x = str(x)
-    if x == "LSPIN":
-        return "HardSigmoid"
+    if x in {"HardSigmoid", "LSPIN"}:
+        return "LSPIN"
     return x
 
 
@@ -46,6 +46,8 @@ def _goal1_label(row: pd.Series) -> str:
     group = str(row["goal1_group"])
     if fam == "MLP":
         return "MLP"
+    if fam in {"L-LSPIN", "L-Concrete"}:
+        return f"{fam}\nSmooth"
     if group == "nosmooth":
         return f"{fam}\nNo Smooth"
     if group == "smooth":
@@ -56,16 +58,19 @@ def _goal1_label(row: pd.Series) -> str:
 
 
 def _label_order_for_goal0() -> list[str]:
-    return ["HardSigmoid", "Concrete"]
+    return ["LSPIN", "Concrete"]
 
 
 def _label_order_for_goal1(dataset: str) -> list[str]:
     order = [
         "MLP",
-        "HardSigmoid\nNo Smooth",
+        "MLP+STG\nNo Smooth",
+        "LSPIN\nNo Smooth",
+        "LSPIN\nSmooth",
         "Concrete\nNo Smooth",
-        "HardSigmoid\nSmooth",
         "Concrete\nSmooth",
+        "L-LSPIN\nSmooth",
+        "L-Concrete\nSmooth",
     ]
     return order
 
@@ -74,6 +79,9 @@ def _prepare_goal0(results_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     runs = pd.read_csv(results_dir / "runs.csv")
     aff = pd.read_csv(results_dir / "affinity_pairs.csv")
     summary = pd.read_csv(results_dir / "goal0_fixed_init_summary.csv")
+
+    if summary.empty:
+        return pd.DataFrame(), pd.DataFrame()
 
     summary = summary.copy()
     summary["plot_label"] = summary.apply(_goal0_label, axis=1)
@@ -105,7 +113,7 @@ def _prepare_goal1(results_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     aff_df = aff.merge(keep, on=["dataset", "variant_key"], how="inner")
     aff_df = aff_df[aff_df["task_stage"] == "fixed_init_eval"].copy()
-    aff_df = aff_df[aff_df["variant_key"] != "goal1_hardsigmoid_alt_nosmooth"].copy()
+    aff_df = aff_df[~aff_df["variant_key"].isin(["goal1_hardsigmoid_alt_nosmooth", "goal1_lspin_alt_nosmooth"])].copy()
     return run_df, aff_df
 
 
@@ -121,10 +129,31 @@ def _make_figure(
     figsize: tuple[float, float] = (22, 12),
     xrotation: float = 25,
 ) -> None:
+    if run_df.empty and aff_df.empty:
+        print(f"Skipped {outpath}: no rows available")
+        return
+
     sns.set_theme(style="whitegrid", context="talk")
     ncols = 4 if include_khard_union_ratio else 3
-    fig, axes = plt.subplots(2, ncols, figsize=figsize, sharex=False)
-    datasets = ["kipan", "brca"]
+    datasets = []
+    for dataset in ["kipan", "brca"]:
+        has_runs = (not run_df.empty) and dataset in set(run_df["dataset"])
+        has_aff = (not aff_df.empty) and dataset in set(aff_df["dataset"])
+        if has_runs or has_aff:
+            datasets.append(dataset)
+    if not datasets:
+        print(f"Skipped {outpath}: no dataset rows available")
+        return
+
+    nrows = len(datasets)
+    height_scale = max(nrows, 1) / 2.0
+    fig, axes = plt.subplots(
+        nrows,
+        ncols,
+        figsize=(figsize[0], max(4.8, figsize[1] * height_scale)),
+        sharex=False,
+        squeeze=False,
+    )
     nice_dataset = {"kipan": "KIPAN", "brca": "BRCA"}
 
     for row_idx, dataset in enumerate(datasets):
@@ -215,15 +244,20 @@ def main() -> None:
     goal0_out = results_dir / "fig_supp_validation_goal0_boxplots.png"
     goal1_out = results_dir / "fig_supp_validation_goal1_boxplots.png"
 
-    _make_figure(
-        goal0_runs,
-        goal0_aff,
-        title="Validation Goal 0: Matched-Sparsity Gate Comparison",
-        outpath=goal0_out,
-        order_fn=lambda _dataset: _label_order_for_goal0(),
-        figsize=(22, 12),
-        xrotation=20,
-    )
+    wrote_goal0 = False
+    if goal0_runs.empty and goal0_aff.empty:
+        print(f"Skipped {goal0_out}: this validation run has no Goal 0 rows")
+    else:
+        _make_figure(
+            goal0_runs,
+            goal0_aff,
+            title="Validation Goal 0: Matched-Sparsity Gate Comparison",
+            outpath=goal0_out,
+            order_fn=lambda _dataset: _label_order_for_goal0(),
+            figsize=(22, 12),
+            xrotation=20,
+        )
+        wrote_goal0 = True
     _make_figure(
         goal1_runs,
         goal1_aff,
@@ -235,7 +269,8 @@ def main() -> None:
         xrotation=30,
     )
 
-    print(f"Saved {goal0_out}")
+    if wrote_goal0:
+        print(f"Saved {goal0_out}")
     print(f"Saved {goal1_out}")
 
 

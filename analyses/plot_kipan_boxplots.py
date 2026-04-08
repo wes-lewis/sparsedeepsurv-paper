@@ -49,8 +49,8 @@ def _parse_args() -> argparse.Namespace:
 
 def _norm_family(x: str) -> str:
     x = str(x)
-    if x == "LSPIN":
-        return "HardSigmoid"
+    if x in {"HardSigmoid", "LSPIN"}:
+        return "LSPIN"
     return x
 
 
@@ -64,7 +64,7 @@ def _showcase_label(row: pd.Series) -> str:
 
 
 def _family_order_key(label: str) -> tuple[int, str]:
-    fam_rank = {"HardSigmoid": 0, "Concrete": 1, "MLP": 2}
+    fam_rank = {"LSPIN": 0, "Concrete": 1, "MLP": 2}
     fam = label.split("\n", 1)[0]
     return (fam_rank.get(fam, 99), label)
 

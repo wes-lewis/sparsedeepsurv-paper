@@ -3,8 +3,9 @@
 Validation runner for SparseDeepSurv chapter-3 experiments.
 
 Implements two experiment families:
-  - Goal 0: gate-type comparison (`lspin_tf` vs `concrete`)
-  - Goal 1: sparse-vs-MLP comparison on KIPAN and BRCA
+  - Goal 0: gate-type comparison (LSPIN vs Concrete)
+  - Goal 1: sparse-vs-MLP comparison on KIPAN and BRCA,
+    including an MLP+STG global-selection baseline
 
 The script intentionally uses the source trees directly instead of relying on
 editable installs, so each worker repeats the required `sys.path.insert(...)`.
@@ -28,23 +29,34 @@ for _path in [SDS_SRC]:
         sys.path.insert(0, _path)
 
 import sparsedeepsurv as sds
-from mlp_baseline import MLPTrainConfig, eval_cindex as eval_mlp_cindex, make_seeded_mlp, train_deepsurv_mlp_l1
 
 PAPER_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DEFAULT = PAPER_ROOT / "data" / "runs" / "validate_models"
-KIPAN_DATA_DEFAULT = Path("/banach2/wes/lspin-pytorch/runs/kipan_20260209_213604")
-BRCA_DATA_DEFAULT = Path("/banach2/wes/lspin-pytorch/runs/tcga_brca20260214_001423")
-KIPAN_SHOWCASE_DEFAULT = PAPER_ROOT / "data" / "runs" / "ch3_kipan_adaptive_v1" / "selected_showcase_configs.csv"
-BRCA_SHOWCASE_DEFAULT = PAPER_ROOT / "data" / "runs" / "ch3_brca_adaptive_v2" / "selected_showcase_configs.csv"
+KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"
+BRCA_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "tcga_brca20260214_001423"
+KIPAN_SHOWCASE_DEFAULT = (
+    PAPER_ROOT
+    / "data"
+    / "runs"
+    / "ch3_kipan_adaptive_v2_selfcontained_ste_lspinmoderate_randominit_20260405_081219"
+    / "selected_showcase_configs.csv"
+)
+BRCA_SHOWCASE_DEFAULT = (
+    PAPER_ROOT
+    / "data"
+    / "runs"
+    / "ch3_brca_adaptive_v2_selfcontained_ste_randominit_20260406_120115"
+    / "selected_showcase_configs.csv"
+)
 
 DATASET_DEFAULTS = {
     "kipan": {
         "data_path": KIPAN_DATA_DEFAULT,
         "showcase_path": KIPAN_SHOWCASE_DEFAULT,
         "knn_k": 8,
-        "lspin_main_sigma": 0.20,
-        "lspin_alt_sigma": 0.15,
-        "concrete_sigma": 0.10,
+        "lspin_main_sigma": 0.22,   # matches KIPAN adaptive run sigma exactly
+        "lspin_alt_sigma": 0.22,    # only one sigma in KIPAN showcase; kept for API compat
+        "concrete_sigma": 0.15,     # matches KIPAN adaptive run sigma exactly
     },
     "brca": {
         "data_path": BRCA_DATA_DEFAULT,
@@ -57,6 +69,7 @@ DATASET_DEFAULTS = {
 }
 
 SHOWCASE_FAMILY_ALIASES = {
+    "lspin": {"hardsigmoid", "lspin"},
     "hardsigmoid": {"hardsigmoid", "lspin"},
     "concrete": {"concrete"},
 }
@@ -119,7 +132,7 @@ def _goal0_sweep_variants(
 ) -> List[Dict[str, object]]:
     variants: List[Dict[str, object]] = []
     families = [
-        ("HardSigmoid", "lspin_tf", float(lspin_no["gate_sigma"]), float(lspin_no["lambda_sparse"])),
+        ("LSPIN", "lspin_tf", float(lspin_no["gate_sigma"]), float(lspin_no["lambda_sparse"])),
         ("Concrete", "concrete", float(concrete_no["gate_sigma"]), float(concrete_no["lambda_sparse"])),
     ]
     for family_label, gate_type, gate_sigma, base_lambda in families:
@@ -140,7 +153,7 @@ def _goal0_sweep_variants(
                 "sigma_match": "exact",
                 "lambda_base": float(base_lambda),
                 "lambda_multiplier": float(mult),
-                "goal0_target_reference": bool(family_label == "HardSigmoid" and abs(float(mult) - 1.0) < 1e-12),
+                "goal0_target_reference": bool(family_label == "LSPIN" and abs(float(mult) - 1.0) < 1e-12),
             })
     return variants
 
@@ -152,6 +165,12 @@ def _goal1_sweep_variants(
     concrete_no: Dict[str, object],
     concrete_sm: Dict[str, object],
     lambda_multipliers: Iterable[float],
+    *,
+    stg_lambda_base: float = None,
+    stg_lambda_multipliers: Iterable[float] = None,
+    lspin_smooth_lambda_scale: float = 1.0,
+    concrete_smooth_lambda_scale: float = 1.0,
+    linear_gated_lambda_multipliers: Iterable[float] = (1.0,),
 ) -> List[Dict[str, object]]:
     variants: List[Dict[str, object]] = [
         {
@@ -171,14 +190,82 @@ def _goal1_sweep_variants(
             "goal0_target_reference": False,
             "goal1_group": "dense",
             "goal1_target_reference": False,
-        }
+        },
+        {
+            "experiment": "goal1",
+            "variant_key": "goal1_rsf",
+            "variant_label": "RSF",
+            "model_family": "RSF",
+            "model_kind": "rsf",
+            "gate_type": None,
+            "gate_sigma": np.nan,
+            "lambda_sparse": np.nan,
+            "lambda_sample_smooth": np.nan,
+            "selection": "reference",
+            "sigma_match": "na",
+            "lambda_base": np.nan,
+            "lambda_multiplier": np.nan,
+            "goal0_target_reference": False,
+            "goal1_group": "dense",
+            "goal1_target_reference": False,
+        },
     ]
 
+    # MLP+STG sweep — lambda base independent of LSPIN when stg_lambda_base is set
+    stg_base = float(stg_lambda_base) if stg_lambda_base is not None else float(lspin_no["lambda_sparse"])
+    stg_mults = list(stg_lambda_multipliers) if stg_lambda_multipliers is not None else list(lambda_multipliers)
+    for mult in stg_mults:
+        lam = stg_base * float(mult)
+        mult_label = str(mult).replace(".", "p")
+        variants.append({
+            "experiment": "goal1",
+            "variant_key": f"goal1_nosmooth_stg_lamx{mult_label}",
+            "variant_label": f"MLP+STG nosmooth x{float(mult):.2g}",
+            "model_family": "MLP+STG",
+            "model_kind": "stg",
+            "gate_type": "global_stg",
+            "gate_sigma": float(lspin_no["gate_sigma"]),
+            "lambda_sparse": lam,
+            "lambda_sample_smooth": 0.0,
+            "selection": "goal1_nosmooth_sweep",
+            "sigma_match": "na",
+            "lambda_base": stg_base,
+            "lambda_multiplier": float(mult),
+            "goal0_target_reference": False,
+            "goal1_group": "nosmooth",
+            "goal1_target_reference": False,
+        })
+
+    # Linear Cox (ungated, no hidden layers, L1-penalised)
+    variants.append({
+        "experiment": "goal1",
+        "variant_key": "goal1_linear_cox",
+        "variant_label": "Linear Cox",
+        "model_family": "LinearCox",
+        "model_kind": "linear_cox",
+        "gate_type": None,
+        "gate_sigma": np.nan,
+        "lambda_sparse": np.nan,
+        "lambda_sample_smooth": np.nan,
+        "selection": "reference",
+        "sigma_match": "na",
+        "lambda_base": np.nan,
+        "lambda_multiplier": np.nan,
+        "goal0_target_reference": False,
+        "goal1_group": "dense",
+        "goal1_target_reference": False,
+    })
+
+    # Apply scale to smooth lambdas (allows tightening sparsity for smooth variants
+    # when the showcase smooth config doesn't reduce Khard relative to nosmooth)
+    lspin_sm_lam = float(lspin_sm["lambda_sparse"]) * float(lspin_smooth_lambda_scale)
+    concrete_sm_lam = float(concrete_sm["lambda_sparse"]) * float(concrete_smooth_lambda_scale)
+
     grouped_families = [
-        ("nosmooth", "HardSigmoid", "lspin_tf", float(lspin_no["gate_sigma"]), float(lspin_no["lambda_sparse"]), 0.0, True),
-        ("nosmooth", "Concrete", "concrete", float(concrete_no["gate_sigma"]), float(concrete_no["lambda_sparse"]), 0.0, False),
-        ("smooth", "HardSigmoid", "lspin_tf", float(lspin_sm["gate_sigma"]), float(lspin_sm["lambda_sparse"]), float(lspin_sm["lambda_sample_smooth"]), True),
-        ("smooth", "Concrete", "concrete", float(concrete_sm["gate_sigma"]), float(concrete_sm["lambda_sparse"]), float(concrete_sm["lambda_sample_smooth"]), False),
+        ("nosmooth", "LSPIN",     "lspin_tf", float(lspin_no["gate_sigma"]),    float(lspin_no["lambda_sparse"]),  0.0,                                            True),
+        ("nosmooth", "Concrete",  "concrete",  float(concrete_no["gate_sigma"]), float(concrete_no["lambda_sparse"]), 0.0,                                           False),
+        ("smooth",   "LSPIN",     "lspin_tf", float(lspin_sm["gate_sigma"]),    lspin_sm_lam,                       float(lspin_sm["lambda_sample_smooth"]),        True),
+        ("smooth",   "Concrete",  "concrete",  float(concrete_sm["gate_sigma"]), concrete_sm_lam,                    float(concrete_sm["lambda_sample_smooth"]),     False),
     ]
 
     for group_label, family_label, gate_type, gate_sigma, base_lambda, smooth, is_ref in grouped_families:
@@ -191,6 +278,7 @@ def _goal1_sweep_variants(
                 "variant_label": f"{family_label} {group_label} x{float(mult):.2g}",
                 "model_family": family_label,
                 "model_kind": "gated",
+                "predictor": "mlp",
                 "gate_type": gate_type,
                 "gate_sigma": gate_sigma,
                 "lambda_sparse": lam,
@@ -207,9 +295,10 @@ def _goal1_sweep_variants(
     variants.append({
         "experiment": "goal1",
         "variant_key": "goal1_lspin_alt_nosmooth",
-        "variant_label": f"HardSigmoid sigma={float(lspin_alt['gate_sigma']):.2f}",
-        "model_family": "HardSigmoid",
+        "variant_label": f"LSPIN sigma={float(lspin_alt['gate_sigma']):.2f}",
+        "model_family": "LSPIN",
         "model_kind": "gated",
+        "predictor": "mlp",
         "gate_type": "lspin_tf",
         "gate_sigma": float(lspin_alt["gate_sigma"]),
         "lambda_sparse": float(lspin_alt["lambda_sparse"]),
@@ -222,6 +311,61 @@ def _goal1_sweep_variants(
         "goal1_group": "alt_sigma",
         "goal1_target_reference": False,
     })
+
+    # L-LSPIN smooth: linear predictor + LSPIN gate + patient-similarity smoothing
+    # Swept over linear_gated_lambda_multipliers so the best lambda can be selected per dataset.
+    lg_mults = list(linear_gated_lambda_multipliers)
+    for mult in lg_mults:
+        mult_label = str(mult).replace(".", "p")
+        lam_ll = lspin_sm_lam * float(mult)
+        vkey = "goal1_smooth_llspin" if abs(float(mult) - 1.0) < 1e-12 else f"goal1_smooth_llspin_lamx{mult_label}"
+        vlabel = "L-LSPIN smooth" if abs(float(mult) - 1.0) < 1e-12 else f"L-LSPIN smooth x{float(mult):.2g}"
+        variants.append({
+            "experiment": "goal1",
+            "variant_key": vkey,
+            "variant_label": vlabel,
+            "model_family": "L-LSPIN",
+            "model_kind": "gated",
+            "predictor": "linear",
+            "gate_type": "lspin_tf",
+            "gate_sigma": float(lspin_sm["gate_sigma"]),
+            "lambda_sparse": lam_ll,
+            "lambda_sample_smooth": float(lspin_sm["lambda_sample_smooth"]),
+            "selection": "goal1_smooth_sweep",
+            "sigma_match": "exact",
+            "lambda_base": lspin_sm_lam,
+            "lambda_multiplier": float(mult),
+            "goal0_target_reference": False,
+            "goal1_group": "linear_gated",
+            "goal1_target_reference": False,
+        })
+
+    # L-Concrete smooth: linear predictor + Concrete gate + patient-similarity smoothing
+    for mult in lg_mults:
+        mult_label = str(mult).replace(".", "p")
+        lam_lc = concrete_sm_lam * float(mult)
+        vkey = "goal1_smooth_lconcrete" if abs(float(mult) - 1.0) < 1e-12 else f"goal1_smooth_lconcrete_lamx{mult_label}"
+        vlabel = "L-Concrete smooth" if abs(float(mult) - 1.0) < 1e-12 else f"L-Concrete smooth x{float(mult):.2g}"
+        variants.append({
+            "experiment": "goal1",
+            "variant_key": vkey,
+            "variant_label": vlabel,
+            "model_family": "L-Concrete",
+            "model_kind": "gated",
+            "predictor": "linear",
+            "gate_type": "concrete",
+            "gate_sigma": float(concrete_sm["gate_sigma"]),
+            "lambda_sparse": lam_lc,
+            "lambda_sample_smooth": float(concrete_sm["lambda_sample_smooth"]),
+            "selection": "goal1_smooth_sweep",
+            "sigma_match": "exact",
+            "lambda_base": concrete_sm_lam,
+            "lambda_multiplier": float(mult),
+            "goal0_target_reference": False,
+            "goal1_group": "linear_gated",
+            "goal1_target_reference": False,
+        })
+
     return variants
 
 
@@ -231,16 +375,22 @@ def _build_variants(
     mode: str,
     goal0_lambda_multipliers: Iterable[float],
     goal1_lambda_multipliers: Iterable[float],
+    *,
+    stg_lambda_base: float = None,
+    stg_lambda_multipliers: Iterable[float] = None,
+    lspin_smooth_lambda_scale: float = 1.0,
+    concrete_smooth_lambda_scale: float = 1.0,
+    linear_gated_lambda_multipliers: Iterable[float] = (1.0,),
 ) -> List[Dict[str, object]]:
     defaults = DATASET_DEFAULTS[dataset_name]
     lspin_no = _pick_showcase_row(
-        showcase_csv, family="HardSigmoid", selection="nosmooth", sigma_target=defaults["lspin_main_sigma"]
+        showcase_csv, family="LSPIN", selection="nosmooth", sigma_target=defaults["lspin_main_sigma"]
     )
     lspin_sm = _pick_showcase_row(
-        showcase_csv, family="HardSigmoid", selection="smooth", sigma_target=defaults["lspin_main_sigma"]
+        showcase_csv, family="LSPIN", selection="smooth", sigma_target=defaults["lspin_main_sigma"]
     )
     lspin_alt = _pick_showcase_row(
-        showcase_csv, family="HardSigmoid", selection="nosmooth", sigma_target=defaults["lspin_alt_sigma"]
+        showcase_csv, family="LSPIN", selection="nosmooth", sigma_target=defaults["lspin_alt_sigma"]
     )
     concrete_no = _pick_showcase_row(
         showcase_csv, family="Concrete", selection="nosmooth", sigma_target=defaults["concrete_sigma"]
@@ -258,6 +408,11 @@ def _build_variants(
         concrete_no,
         concrete_sm,
         goal1_lambda_multipliers,
+        stg_lambda_base=stg_lambda_base,
+        stg_lambda_multipliers=stg_lambda_multipliers,
+        lspin_smooth_lambda_scale=lspin_smooth_lambda_scale,
+        concrete_smooth_lambda_scale=concrete_smooth_lambda_scale,
+        linear_gated_lambda_multipliers=linear_gated_lambda_multipliers,
     )
 
     if mode == "goal0":
@@ -343,10 +498,13 @@ def _run_mlp_task(task: Dict[str, object], split: Dict[str, object], device: str
     import torch
 
     train_seed = int(task.get("train_seed", task["run_seed"]))
-    model = make_seeded_mlp(
+    is_linear_cox = str(task.get("model_kind", "mlp")) == "linear_cox"
+    hidden_dims = () if is_linear_cox else tuple(args.mlp_hidden)
+    dropout_p = 0.0 if is_linear_cox else float(args.mlp_dropout)
+    model = sds.make_seeded_mlp(
         input_dim=int(split["input_dim"]),
-        hidden_dims=tuple(args.mlp_hidden),
-        dropout_p=float(args.mlp_dropout),
+        hidden_dims=hidden_dims,
+        dropout_p=dropout_p,
         seed=train_seed,
     ).to(device)
 
@@ -363,14 +521,15 @@ def _run_mlp_task(task: Dict[str, object], split: Dict[str, object], device: str
         torch.save({k: v.detach().cpu().clone() for k, v in model.state_dict().items()}, init_path)
         init_artifact = str(init_path)
 
-    info = train_deepsurv_mlp_l1(
+    l1 = float(args.linear_cox_l1 if (is_linear_cox and args.linear_cox_l1 is not None) else args.mlp_l1)
+    info = sds.train_deepsurv_mlp_l1(
         model,
         split["Xt_tr"], split["tt_tr"], split["et_tr"],
         split["Xt_val"], split["tt_val"], split["et_val"],
-        config=MLPTrainConfig(
+        config=sds.MLPTrainConfig(
             lr=float(args.mlp_lr),
             weight_decay=float(args.mlp_weight_decay),
-            lambda_l1_input=float(args.mlp_l1),
+            lambda_l1_input=l1,
             batch_size=int(args.batch_size),
             max_epochs=int(args.mlp_max_epochs),
             patience=int(args.mlp_patience),
@@ -378,7 +537,7 @@ def _run_mlp_task(task: Dict[str, object], split: Dict[str, object], device: str
         device=device,
         verbose=False,
     )
-    test_cindex, _ = eval_mlp_cindex(
+    test_cindex, _ = sds.eval_mlp_cindex(
         model,
         split["Xt_test"], split["tt_test"], split["et_test"],
         device=device,
@@ -394,6 +553,125 @@ def _run_mlp_task(task: Dict[str, object], split: Dict[str, object], device: str
         "effective_gene_count": np.nan,
         "affinity_artifact": "",
         "init_artifact": init_artifact,
+    }
+
+
+def _run_stg_task(
+    task: Dict[str, object],
+    split: Dict[str, object],
+    device: str,
+    args,
+    artifacts_dir: Path,
+) -> Dict[str, object]:
+    import torch
+
+    stg_hidden_dims = list(args.stg_hidden_dims) if hasattr(args, "stg_hidden_dims") and args.stg_hidden_dims else [int(args.stg_hidden_dim)]
+    model = sds.DeepSurvSTG(
+        input_dim=int(split["input_dim"]),
+        hidden_dim=stg_hidden_dims[0],
+        hidden_dims=stg_hidden_dims,
+        gate_sigma=float(args.stg_sigma),
+        a=float(args.stg_a),
+        init_alpha=float(args.stg_init_alpha),
+    ).to(device)
+
+    init_artifact = ""
+    if str(task.get("load_init_artifact", "")):
+        try:
+            state = torch.load(str(task["load_init_artifact"]), map_location=device, weights_only=True)
+        except TypeError:
+            state = torch.load(str(task["load_init_artifact"]), map_location=device)
+        model.load_state_dict(state)
+        init_artifact = str(task["load_init_artifact"])
+    elif bool(task.get("save_init_artifact", False)):
+        init_path = _init_artifact_path(Path(task["artifacts_dir"]), task)
+        torch.save({k: v.detach().cpu().clone() for k, v in model.state_dict().items()}, init_path)
+        init_artifact = str(init_path)
+
+    info = sds.train_gated_deepsurv(
+        model,
+        split["Xt_tr"], split["tt_tr"], split["et_tr"],
+        split["Xt_val"], split["tt_val"], split["et_val"],
+        split["Xt_test"], split["tt_test"], split["et_test"],
+        A_sample_train=None,
+        config=sds.GatedTrainConfig(
+            lr=float(args.stg_lr),
+            weight_decay=float(args.weight_decay),
+            batch_size=int(args.batch_size),
+            max_epochs=int(args.max_epochs),
+            patience=int(args.patience),
+            lambda_sparse=float(task["lambda_sparse"]),
+            lambda_sample_smooth=0.0,
+            lambda_gene_smooth=0.0,
+        ),
+        device=device,
+        verbose=False,
+    )
+    _, g_det, hard_g, _ = sds.get_gates(model, split["Xt_test"], device=device, hard_threshold=0.5, batch_size=512)
+    G_det = g_det.numpy()
+    G_hard = hard_g.numpy()
+    gpars = sds.global_parsimony_metrics(G_hard, freq_threshold=float(args.global_freq_threshold))
+    aff_vec = sds.affinity_upper_vec(sds.gate_affinity_matrix(G_hard, normalize="01", zero_diag=True))
+    aff_path = _affinity_artifact_path(artifacts_dir, task)
+    np.save(aff_path, aff_vec)
+
+    return {
+        "test_cindex": float(info.get("test_cindex", np.nan)),
+        "best_val_cindex": float(info.get("best_val_cindex", np.nan)),
+        "best_epoch": int(info.get("best_epoch", -1)),
+        "mean_Ksoft": float(G_det.sum(axis=1).mean()),
+        "mean_Khard": float(G_hard.sum(axis=1).mean()),
+        "affinity_artifact": str(aff_path),
+        "init_artifact": init_artifact,
+        **gpars,
+    }
+
+
+def _run_rsf_task(
+    task: Dict[str, object],
+    split: Dict[str, object],
+    args,
+) -> Dict[str, object]:
+    from sksurv.ensemble import RandomSurvivalForest
+
+    rng = int(task.get("train_seed", task["run_seed"]))
+    X_tr = split["Xt_tr"].cpu().numpy()
+    t_tr = split["tt_tr"].cpu().numpy()
+    e_tr = split["et_tr"].cpu().numpy().astype(bool)
+    X_test = split["Xt_test"].cpu().numpy()
+    t_test = split["tt_test"].cpu().numpy()
+    e_test = split["et_test"].cpu().numpy().astype(bool)
+
+    y_tr = np.array(
+        [(bool(e), float(t)) for e, t in zip(e_tr, t_tr)],
+        dtype=[("event", bool), ("time", float)],
+    )
+    y_test = np.array(
+        [(bool(e), float(t)) for e, t in zip(e_test, t_test)],
+        dtype=[("event", bool), ("time", float)],
+    )
+
+    rsf = RandomSurvivalForest(
+        n_estimators=int(args.rsf_n_estimators),
+        min_samples_leaf=int(args.rsf_min_samples_leaf),
+        max_features=str(args.rsf_max_features),
+        random_state=rng,
+        n_jobs=1,
+    )
+    rsf.fit(X_tr, y_tr)
+    test_cindex = float(rsf.score(X_test, y_test))
+
+    return {
+        "test_cindex": test_cindex,
+        "best_val_cindex": float("nan"),
+        "best_epoch": -1,
+        "mean_Ksoft": float("nan"),
+        "mean_Khard": float("nan"),
+        "gene_union_count": float("nan"),
+        "gene_freq_ge_threshold_count": float("nan"),
+        "effective_gene_count": float("nan"),
+        "affinity_artifact": "",
+        "init_artifact": "",
     }
 
 
@@ -416,6 +694,8 @@ def _run_gated_task(
         gate_sigma=float(task["gate_sigma"]),
         temperature=temperature,
         concrete_mode=(str(args.concrete_mode) if str(task["gate_type"]) == "concrete" else "relaxed"),
+        predictor=str(task.get("predictor", "mlp")),
+        gating_hidden_dim=int(getattr(args, "gating_hidden_dim", 128)),
     ).to(device)
 
     init_artifact = ""
@@ -538,8 +818,12 @@ def _worker(worker_id: int, tasks: List[Dict[str, object]], device: str, args_di
         )
 
         try:
-            if task["model_kind"] == "mlp":
+            if task["model_kind"] in ("mlp", "linear_cox"):
                 metrics = _run_mlp_task(task, split, device, args)
+            elif task["model_kind"] == "stg":
+                metrics = _run_stg_task(task, split, device, args, artifacts_dir)
+            elif task["model_kind"] == "rsf":
+                metrics = _run_rsf_task(task, split, args)
             else:
                 metrics = _run_gated_task(task, split, device, args, artifacts_dir)
         except Exception as exc:
@@ -729,15 +1013,15 @@ def _select_goal0_matched(summary_runs: pd.DataFrame, summary_aff: pd.DataFrame)
         if not summary_aff.empty else pd.DataFrame()
     )
     rows: List[Dict[str, object]] = []
-    family_order = ["HardSigmoid", "Concrete"]
+    family_order = ["LSPIN", "Concrete"]
 
     for dataset_name, sub in goal0.groupby("dataset", dropna=False):
         ref = sub[
-                (sub["model_family"] == "HardSigmoid")
+                (sub["model_family"] == "LSPIN")
                 & np.isclose(sub["lambda_multiplier"].astype(float), 1.0)
             ].copy()
         if ref.empty:
-            ref = sub[sub["model_family"] == "HardSigmoid"].copy()
+            ref = sub[sub["model_family"] == "LSPIN"].copy()
         if ref.empty:
             continue
         ref_row = ref.sort_values(["mean_test_cindex"], ascending=[False]).iloc[0]
@@ -790,33 +1074,54 @@ def _select_goal1_matched(summary_runs: pd.DataFrame, summary_aff: pd.DataFrame)
         if not summary_aff.empty else pd.DataFrame()
     )
     rows: List[Dict[str, object]] = []
-    family_order = ["HardSigmoid", "Concrete"]
+    family_order = ["LSPIN", "Concrete", "MLP+STG"]
 
-    dense = goal1[goal1["model_family"] == "MLP"].copy()
-    for _, row in dense.iterrows():
+    # Dense reference models (MLP, LinearCox): always passthrough (single variant each).
+    passthrough_families = {"MLP", "LinearCox"}
+    passthrough = goal1[goal1["model_family"].isin(passthrough_families)].copy()
+    for _, row in passthrough.iterrows():
         picked = row.to_dict()
         picked["target_mean_Khard"] = np.nan
         picked["khard_delta"] = np.nan
         picked["goal1_reference_variant_key"] = ""
         rows.append(picked)
 
+    # L-LSPIN, L-Concrete, and MLP+STG: select best by test C-index per dataset.
+    # MLP+STG uses global gates (not patient-specific) so Khard-matching against LSPIN
+    # is not the right criterion — CI-based selection is used instead.
+    for ci_family in ["L-LSPIN", "L-Concrete", "MLP+STG"]:
+        ci_all = goal1[goal1["model_family"] == ci_family].copy()
+        if ci_all.empty:
+            continue
+        for dataset_name, ci_ds in ci_all.groupby("dataset", dropna=False):
+            if len(ci_ds) == 1:
+                picked = ci_ds.iloc[0].to_dict()
+            else:
+                picked = ci_ds.sort_values("mean_test_cindex", ascending=False).iloc[0].to_dict()
+            picked["target_mean_Khard"] = np.nan
+            picked["khard_delta"] = np.nan
+            picked["goal1_reference_variant_key"] = ""
+            rows.append(picked)
+
+    # LSPIN and Concrete: Khard-matched selection (patient-specific gated models)
+    khard_family_order = ["LSPIN", "Concrete"]
     for dataset_name, sub_dataset in goal1.groupby("dataset", dropna=False):
         for group_label in ["nosmooth", "smooth"]:
             sub = sub_dataset[sub_dataset["variant_key"].astype(str).str.contains(f"goal1_{group_label}_")].copy()
             if sub.empty:
                 continue
             ref = sub[
-                (sub["model_family"] == "HardSigmoid")
+                (sub["model_family"] == "LSPIN")
                 & np.isclose(sub["lambda_multiplier"].astype(float), 1.0)
             ].copy()
             if ref.empty:
-                ref = sub[sub["model_family"] == "HardSigmoid"].copy()
+                ref = sub[sub["model_family"] == "LSPIN"].copy()
             if ref.empty:
                 continue
             ref_row = ref.sort_values(["mean_test_cindex"], ascending=[False]).iloc[0]
             target_khard = float(ref_row["mean_Khard"])
 
-            for family in family_order:
+            for family in khard_family_order:
                 fam = sub[sub["model_family"] == family].copy()
                 if fam.empty:
                     continue
@@ -981,6 +1286,7 @@ def _build_fixed_init_tasks(
                     "variant_label": str(row["variant_label"]),
                     "model_family": str(row["model_family"]),
                     "model_kind": str(init_row["model_kind"]),
+                    "predictor": str(init_row.get("predictor", "mlp")),
                     "gate_type": init_row["gate_type"],
                     "gate_sigma": init_row["gate_sigma"],
                     "lambda_sparse": init_row["lambda_sparse"],
@@ -1076,6 +1382,64 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--mlp-l1", type=float, default=3e-3)
     p.add_argument("--mlp-max-epochs", type=int, default=300)
     p.add_argument("--mlp-patience", type=int, default=25)
+    p.add_argument("--stg-hidden-dim", type=int, default=64)
+    p.add_argument(
+        "--stg-hidden-dims",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Hidden layer widths for MLP+STG risk network (overrides --stg-hidden-dim). "
+             "E.g. --stg-hidden-dims 64 32 matches the plain MLP architecture.",
+    )
+    p.add_argument(
+        "--gating-hidden-dim",
+        type=int,
+        default=128,
+        help="Hidden width of the two-layer gating network (input → H → input). "
+             "Default 128. Reduce to 32 or 64 when using a linear predictor on high-dimensional "
+             "data (e.g. BRCA 24K features) to avoid a massively overparameterized gate.",
+    )
+    p.add_argument("--stg-lr", type=float, default=1e-2)
+    p.add_argument("--stg-sigma", type=float, default=0.5)
+    p.add_argument("--stg-a", type=float, default=1.0)
+    p.add_argument("--stg-init-alpha", type=float, default=0.0)
+    p.add_argument(
+        "--stg-lambda-base", type=float, default=None,
+        help="Override STG goal-1 lambda base (default: derived from LSPIN nosmooth showcase lambda). "
+             "Use a small value (e.g. 0.001) to prevent STG Khard collapse.",
+    )
+    p.add_argument(
+        "--stg-lambda-multipliers",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Lambda sweep multipliers for MLP+STG (default: same as --goal1-lambda-multipliers). "
+             "Override to explore a different range, e.g. 0.1 0.25 0.5 1.0 2.0 5.0",
+    )
+    p.add_argument(
+        "--linear-gated-lambda-multipliers",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Lambda sweep multipliers for L-LSPIN and L-Concrete (default: [1.0], single point). "
+             "Set to e.g. 0.1 0.25 0.5 1.0 2.0 5.0 to sweep and select best CI per dataset.",
+    )
+    p.add_argument("--rsf-n-estimators", type=int, default=200)
+    p.add_argument("--rsf-min-samples-leaf", type=int, default=15)
+    p.add_argument("--rsf-max-features", type=str, default="sqrt")
+    p.add_argument(
+        "--lspin-smooth-lambda-scale", type=float, default=1.0,
+        help="Scale factor applied to smooth-LSPIN lambda_sparse from the showcase "
+             "(e.g. 1.5 to push Khard lower than nosmooth).",
+    )
+    p.add_argument(
+        "--concrete-smooth-lambda-scale", type=float, default=1.0,
+        help="Scale factor applied to smooth-Concrete lambda_sparse from the showcase.",
+    )
+    p.add_argument(
+        "--linear-cox-l1", type=float, default=None,
+        help="L1 penalty for linear Cox; default: same as --mlp-l1.",
+    )
 
     p.add_argument("--kipan-showcase", type=Path, default=KIPAN_SHOWCASE_DEFAULT)
     p.add_argument("--brca-showcase", type=Path, default=BRCA_SHOWCASE_DEFAULT)
@@ -1109,6 +1473,7 @@ def main() -> None:
     DATASET_DEFAULTS["kipan"]["data_path"] = args.kipan_data.resolve()
     DATASET_DEFAULTS["brca"]["data_path"] = args.brca_data.resolve()
 
+    lg_mults = args.linear_gated_lambda_multipliers if args.linear_gated_lambda_multipliers is not None else [1.0]
     variants_by_dataset = {
         dataset_name: _build_variants(
             dataset_name,
@@ -1116,6 +1481,11 @@ def main() -> None:
             args.mode,
             args.goal0_lambda_multipliers,
             args.goal1_lambda_multipliers,
+            stg_lambda_base=args.stg_lambda_base,
+            stg_lambda_multipliers=args.stg_lambda_multipliers,
+            lspin_smooth_lambda_scale=float(args.lspin_smooth_lambda_scale),
+            concrete_smooth_lambda_scale=float(args.concrete_smooth_lambda_scale),
+            linear_gated_lambda_multipliers=lg_mults,
         )
         for dataset_name in args.datasets
     }
