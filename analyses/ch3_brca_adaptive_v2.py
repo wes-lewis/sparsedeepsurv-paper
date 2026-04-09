@@ -59,30 +59,34 @@ RESULTS_DEFAULT   = PAPER_ROOT / "data" / "runs" / "ch3_brca_adaptive_v2"
 def _build_configs(args) -> List[Dict]:
     configs = []
     idx = 0
-    for sigma in args.lspin_sigmas:
-        for lam in args.lspin_lambdas:
-            for smooth in args.sample_smooth_grid:
-                configs.append({
-                    "family_label": "LSPIN",
-                    "gate_type":    "lspin_tf",
-                    "gate_sigma":   float(sigma),
-                    "lam":          float(lam),
-                    "smooth":       float(smooth),
-                    "global_cfg_idx": idx,
-                })
-                idx += 1
-    for sigma in args.concrete_sigmas:
-        for lam in args.concrete_lambdas:
-            for smooth in args.sample_smooth_grid:
-                configs.append({
-                    "family_label": "Concrete",
-                    "gate_type":    "concrete",
-                    "gate_sigma":   float(sigma),
-                    "lam":          float(lam),
-                    "smooth":       float(smooth),
-                    "global_cfg_idx": idx,
-                })
-                idx += 1
+    family_specs = [
+        ("LSPIN", "lspin_tf", "mlp", args.lspin_sigmas, args.lspin_lambdas, args.lspin_temperature, args.lspin_patience),
+        ("L-LSPIN", "lspin_tf", "linear", args.llspin_sigmas, args.llspin_lambdas, args.lspin_temperature, args.llspin_patience),
+        ("Concrete", "concrete", "mlp", args.concrete_sigmas, args.concrete_lambdas, args.concrete_temperature, args.concrete_patience),
+        ("L-Concrete", "concrete", "linear", args.lconcrete_sigmas, args.lconcrete_lambdas, args.concrete_temperature, args.lconcrete_patience),
+    ]
+    for family_label, gate_type, predictor, sigmas, lambdas, temperature, patience in family_specs:
+        for sigma in sigmas:
+            for lam in lambdas:
+                for smooth in args.sample_smooth_grid:
+                    configs.append({
+                        "family_label": family_label,
+                        "gate_type": gate_type,
+                        "predictor": predictor,
+                        "gate_sigma": float(sigma),
+                        "lam": float(lam),
+                        "smooth": float(smooth),
+                        "temperature": float(temperature),
+                        "patience": int(patience),
+                        "gating_hidden_dim": int(args.gated_hidden_dim),
+                        "gate_hidden_dropout_p": float(args.gate_hidden_dropout_p),
+                        "risk_hidden_dims": tuple(int(x) for x in args.risk_hidden_dims) if predictor == "mlp" else (),
+                        "risk_dropout_p": float(args.risk_dropout_p if predictor == "mlp" else 0.0),
+                        "lspin_init_bias": float(args.lspin_init_bias),
+                        "gate_weight_decay": float(args.gate_weight_decay),
+                        "global_cfg_idx": idx,
+                    })
+                    idx += 1
     return configs
 
 
@@ -108,15 +112,32 @@ def _parse():
     p.add_argument("--batch-size",   type=int,   default=128)
     p.add_argument("--max-epochs",   type=int,   default=300)
 
-    # BRCA lambda grids — calibrated to Khard ~200–1000 at sigma=0.10
-    p.add_argument("--lspin-lambdas", type=float, nargs="+",
-                   default=[0.010, 0.007, 0.005, 0.0033, 0.0025, 0.0018])
-    p.add_argument("--concrete-lambdas", type=float, nargs="+",
-                   default=[0.004, 0.003, 0.0022, 0.0018, 0.0015, 0.0012])
+    p.add_argument("--gated-hidden-dim", type=int, default=64)
+    p.add_argument("--risk-hidden-dims", type=int, nargs="+", default=[64, 32])
+    p.add_argument("--risk-dropout-p", type=float, default=0.1)
+    p.add_argument("--gate-hidden-dropout-p", type=float, default=0.0)
+    p.add_argument("--gate-weight-decay", type=float, default=0.0)
+    p.add_argument("--lspin-init-bias", type=float, default=0.0)
+    p.add_argument("--lspin-patience", type=int, default=12)
+    p.add_argument("--llspin-patience", type=int, default=35)
+    p.add_argument("--concrete-patience", type=int, default=20)
+    p.add_argument("--lconcrete-patience", type=int, default=20)
 
-    # Two sigmas per family
-    p.add_argument("--lspin-sigmas",    type=float, nargs="+", default=[0.10, 0.15])
-    p.add_argument("--concrete-sigmas", type=float, nargs="+", default=[0.10, 0.15])
+    # BRCA lambda grids centered on the gentler validation regime.
+    p.add_argument("--lspin-lambdas", type=float, nargs="+",
+                   default=[0.014, 0.0105, 0.00875, 0.007, 0.00525])
+    p.add_argument("--llspin-lambdas", type=float, nargs="+",
+                   default=[0.021, 0.014, 0.0105, 0.00875, 0.007])
+    p.add_argument("--concrete-lambdas", type=float, nargs="+",
+                   default=[0.0055, 0.0044, 0.0033, 0.00275, 0.0022])
+    p.add_argument("--lconcrete-lambdas", type=float, nargs="+",
+                   default=[0.0066, 0.0044, 0.0033, 0.00275, 0.00165])
+
+    # Two sigmas per family.
+    p.add_argument("--lspin-sigmas",    type=float, nargs="+", default=[0.15, 0.12])
+    p.add_argument("--llspin-sigmas",   type=float, nargs="+", default=[0.15, 0.12])
+    p.add_argument("--concrete-sigmas", type=float, nargs="+", default=[0.15, 0.12])
+    p.add_argument("--lconcrete-sigmas", type=float, nargs="+", default=[0.15, 0.12])
 
     # Temperatures (same as KIPAN)
     p.add_argument("--lspin-temperature",    type=float, default=0.5)

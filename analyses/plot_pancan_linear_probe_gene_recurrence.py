@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Summarize repeated-refit gene recurrence for the PanCan linear gated probe.
+"""Summarize repeated-refit gene recurrence for a gated patient-subset signal probe.
 
 This script uses the saved patient-subset predictivity table from
 ``quick_linear_gated_probe.py``. Each fold/replicate/model contributes a ranked
-list of gated genes; we compare overlap among those lists with matched random
-sets from the same feature universe, and write a candidate table of recurrent
-tumor-type-associated gated genes.
+list of selected genes; we compare overlap among those lists with matched
+random sets from the same feature universe, and write a candidate table of
+recurrent tumor-type-associated selected genes.
 """
 from __future__ import annotations
 
@@ -24,15 +24,37 @@ import pandas as pd
 from scipy.stats import mannwhitneyu
 
 
-RUN_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "ch3_pancan_adaptive_v2_selfcontained_ste_randominit_20260406_141705/"
-    "linear_gated_probe_pancan_3fold_2rep_lspin_smooth_lamx0p25"
-)
-DATA_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-    "tcga_pancan_xena_20260330_top5000"
-)
+RUN_DEFAULTS = {
+    "pancan": Path(
+        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
+        "ch3_pancan_adaptive_v2_selfcontained_ste_randominit_20260406_141705/"
+        "linear_gated_probe_pancan_3fold_2rep_lspin_smooth_lamx0p25"
+    ),
+    "kipan": Path(
+        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
+        "adaptive_gentle_all_kipan_brca_pancan_20260408_193020/"
+        "kipan/linear_gated_probe_kipan_3fold_2rep"
+    ),
+    "brca": Path(
+        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
+        "ch3_brca_adaptive_v2_selfcontained_ste_randominit_20260406_120115/"
+        "linear_gated_probe_brca_3fold_2rep"
+    ),
+}
+DATA_DEFAULTS = {
+    "pancan": Path(
+        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
+        "tcga_pancan_xena_20260330_top5000"
+    ),
+    "kipan": Path(
+        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
+        "kipan_20260209_213604"
+    ),
+    "brca": Path(
+        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
+        "tcga_brca20260214_001423"
+    ),
+}
 
 # Lightweight, transparent highlight list for biology-facing examples. This is
 # intentionally not used for any statistical test; it only flags recurrent
@@ -56,8 +78,9 @@ CURATED_TUMOR_GENE_NOTES = {
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--probe-dir", type=Path, default=RUN_DEFAULT)
-    p.add_argument("--data-dir", type=Path, default=DATA_DEFAULT)
+    p.add_argument("--dataset", choices=["pancan", "kipan", "brca"], default="pancan")
+    p.add_argument("--probe-dir", type=Path, default=None)
+    p.add_argument("--data-dir", type=Path, default=None)
     p.add_argument("--outdir", type=Path, default=None)
     p.add_argument("--top-n", nargs="+", type=int, default=[25, 50, 100, 200, 400])
     p.add_argument("--candidate-top-n", type=int, default=100)
@@ -71,13 +94,20 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _display_selection(selection: str) -> str:
-    if selection == "smooth_lamx0p25_smooth0p15":
+    selection = str(selection)
+    if selection == "nosmooth" or selection.startswith("nosmooth_lamx"):
+        return "nosmooth"
+    if selection == "smooth" or selection.startswith("smooth_lamx"):
         return "smooth"
-    return str(selection)
+    return selection
 
 
 def _display_model(family: str, selection: str) -> str:
     return f"{family} {_display_selection(selection)}"
+
+
+def _prefix(dataset: str) -> str:
+    return f"{dataset}_gated_patient_subset_signal_probe"
 
 
 def _load_gene_universe(data_dir: Path, observed_genes: pd.Series) -> np.ndarray:
@@ -253,6 +283,8 @@ def _candidate_table(df: pd.DataFrame, n: int) -> pd.DataFrame:
 
 def _load_annotation_cache(outdir: Path) -> pd.DataFrame:
     candidates = [
+        outdir / "pancan_gated_patient_subset_signal_probe_recurrent_gene_candidate_ensembl_annotations.csv",
+        outdir / "pancan_gated_patient_subset_signal_probe_recurrent_gene_candidates_annotated.csv",
         outdir / "pancan_linear_probe_recurrent_gene_candidate_ensembl_annotations.csv",
         outdir / "pancan_linear_probe_recurrent_gene_candidates_annotated.csv",
     ]
@@ -371,6 +403,10 @@ def _plot_overlap(summary: pd.DataFrame, outdir: Path) -> None:
         "Concrete smooth": "#0f6b63",
         "LSPIN nosmooth": "#b36b1e",
         "LSPIN smooth": "#bc3c29",
+        "L-LSPIN nosmooth": "#7f3c8d",
+        "L-LSPIN smooth": "#af5bbd",
+        "L-Concrete nosmooth": "#1b9e77",
+        "L-Concrete smooth": "#66c2a5",
     }
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.8), constrained_layout=True)
     for label in labels:
@@ -381,10 +417,10 @@ def _plot_overlap(summary: pd.DataFrame, outdir: Path) -> None:
         axes[1].plot(g["top_n"], g["observed_mean_overlap_n"], marker="o", lw=2.0, label=label, color=color)
         axes[1].plot(g["top_n"], g["random_mean_overlap_n"], marker="o", lw=1.4, ls="--", color=color, alpha=0.55)
     axes[0].set_title("Repeated-refit gene overlap")
-    axes[0].set_xlabel("Top N gated genes per refit")
+    axes[0].set_xlabel("Top N selected genes per refit")
     axes[0].set_ylabel("Mean pairwise Jaccard index")
     axes[1].set_title("Exact shared genes")
-    axes[1].set_xlabel("Top N gated genes per refit")
+    axes[1].set_xlabel("Top N selected genes per refit")
     axes[1].set_ylabel("Mean pairwise overlap count")
     for ax in axes:
         ax.grid(axis="y", alpha=0.25)
@@ -392,7 +428,7 @@ def _plot_overlap(summary: pd.DataFrame, outdir: Path) -> None:
         ax.set_xticks(sorted(summary["top_n"].unique()))
         ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())
     axes[1].legend(title="solid: observed; dashed: random", loc="upper left", bbox_to_anchor=(1.02, 1.0), frameon=False)
-    fig.savefig(outdir / "fig_pancan_linear_probe_gene_recurrence_overlap.png", dpi=220, bbox_inches="tight")
+    fig.savefig(outdir / "fig_gated_patient_subset_gene_recurrence_overlap.png", dpi=220, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -434,28 +470,33 @@ def _plot_candidate_heatmap(candidates: pd.DataFrame, outdir: Path, top_per_mode
     ax.axvline(0, color="0.35", lw=1, ls="--")
     ax.set_yticks(y)
     ax.set_yticklabels(plot_df["row_label"], fontsize=7)
-    ax.set_xlabel("Median gated-gene advantage, -log10(p)")
-    ax.set_title("Recurrent tumor-type-associated gated genes")
+    ax.set_xlabel("Median selected-gene advantage, -log10(p)")
+    ax.set_title("Recurrent tumor-type-associated selected genes")
     ax.grid(axis="x", alpha=0.2)
     cbar = fig.colorbar(sc, ax=ax, pad=0.02)
     cbar.set_label("Fraction assigned to primary tumor type")
     for size, label in [(3, "3 runs"), (6, "6 runs")]:
         ax.scatter([], [], s=25 + 23 * size, c="0.65", edgecolor="white", label=label)
     ax.legend(title="Recurrence", loc="lower right", frameon=True, fontsize=7, title_fontsize=8)
-    fig.savefig(outdir / "fig_pancan_linear_probe_recurrent_gene_candidates.png", dpi=220, bbox_inches="tight")
+    fig.savefig(outdir / "fig_gated_patient_subset_recurrent_gene_candidates.png", dpi=220, bbox_inches="tight")
     plt.close(fig)
 
 
 def main() -> None:
     args = _parse_args()
+    probe_dir = args.probe_dir or RUN_DEFAULTS[args.dataset]
+    data_dir = args.data_dir or DATA_DEFAULTS[args.dataset]
     outdir = args.outdir or args.probe_dir
+    outdir = args.outdir or probe_dir
     outdir.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(args.seed)
 
-    patient_path = args.probe_dir / "linear_gated_probe_patient_subset_predictivity.csv"
+    patient_path = probe_dir / "gated_patient_subset_signal_probe_patient_subset_predictivity.csv"
+    if not patient_path.exists():
+        patient_path = probe_dir / "linear_gated_probe_patient_subset_predictivity.csv"
     df = pd.read_csv(patient_path)
     df["selection"] = df["selection"].astype(str)
-    universe = _load_gene_universe(args.data_dir, df["gene"])
+    universe = _load_gene_universe(data_dir, df["gene"])
 
     all_pair_rows = []
     for n in args.top_n:
@@ -482,11 +523,12 @@ def main() -> None:
         max_rows=args.table_max_rows,
     )
 
-    pair_df.to_csv(outdir / "pancan_linear_probe_gene_recurrence_pairwise.csv", index=False)
-    summary.to_csv(outdir / "pancan_linear_probe_gene_recurrence_summary.csv", index=False)
-    candidates.to_csv(outdir / "pancan_linear_probe_recurrent_gene_candidates.csv", index=False)
-    candidates.to_csv(outdir / "pancan_linear_probe_recurrent_gene_candidates_annotated.csv", index=False)
-    supp_table.to_csv(outdir / "pancan_linear_probe_recurrent_gene_supplement_table.csv", index=False)
+    prefix = _prefix(args.dataset)
+    pair_df.to_csv(outdir / f"{prefix}_gene_recurrence_pairwise.csv", index=False)
+    summary.to_csv(outdir / f"{prefix}_gene_recurrence_summary.csv", index=False)
+    candidates.to_csv(outdir / f"{prefix}_recurrent_gene_candidates.csv", index=False)
+    candidates.to_csv(outdir / f"{prefix}_recurrent_gene_candidates_annotated.csv", index=False)
+    supp_table.to_csv(outdir / f"{prefix}_recurrent_gene_supplement_table.csv", index=False)
 
     _plot_overlap(summary, outdir)
     _plot_candidate_heatmap(candidates, outdir)

@@ -13,6 +13,7 @@ editable installs, so each worker repeats the required `sys.path.insert(...)`.
 from __future__ import annotations
 
 import argparse
+import ast
 import os
 import sys
 import time
@@ -66,6 +67,41 @@ DATASET_DEFAULTS = {
         "lspin_alt_sigma": 0.15,
         "concrete_sigma": 0.10,
     },
+}
+
+# Per-(dataset, model_family) training hyperparameters derived from tuning sweeps.
+# Fields here override the CLI defaults for that family. Missing keys fall back to args.
+# Concrete/L-Concrete: from validate_goal1_tuning_20260408_082651
+# LSPIN/L-LSPIN: from validate_lspin_patience_20260408_124221
+GATED_BEST_CONFIGS: Dict[tuple, Dict] = {
+    ("kipan", "Concrete"):   {"gated_lr": 1e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 20, "gate_weight_decay": None},
+    ("kipan", "L-Concrete"): {"gated_lr": 1e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 20, "gate_weight_decay": None},
+    ("kipan", "LSPIN"):      {"gated_lr": 2e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 12, "gate_weight_decay": 0.0},
+    ("kipan", "L-LSPIN"):    {"gated_lr": 2e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 12, "gate_weight_decay": 0.0},
+    ("brca",  "Concrete"):   {"gated_lr": 1e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 20, "gate_weight_decay": None},
+    ("brca",  "L-Concrete"): {"gated_lr": 1e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 20, "gate_weight_decay": None},
+    ("brca",  "LSPIN"):      {"gated_lr": 2e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 10, "gate_weight_decay": 0.0},
+    ("brca",  "L-LSPIN"):    {"gated_lr": 2e-3, "gating_hidden_dim": 64,  "lr_schedule": None,     "temp_schedule": None,     "gate_hidden_dropout_p": 0.0, "patience": 35, "gate_weight_decay": 0.0},
+}
+
+# Per-(dataset, model_family) lambda_sparse anchors derived from tuning sweeps.
+# These replace the showcase-CSV lambda_base for the sweep, so multipliers bracket
+# a region we have evidence is near-optimal. The sweep+select mechanism is unchanged —
+# this just ensures the evaluated range is well-centred on what we learned.
+#
+# KIPAN LSPIN/L-LSPIN: showcase lambda=0.0016; best from reg sweep=0.007 (4.4x off —
+#   max multiplier of 3x would never reach it, so anchor is shifted).
+# All Concrete/BRCA LSPIN entries already close to showcase; kept for symmetry.
+GATED_LAMBDA_ANCHORS: Dict[tuple, float] = {
+    ("kipan", "LSPIN"):      0.007,
+    ("kipan", "L-LSPIN"):    0.007,
+    # Concrete anchors match showcase closely; include to be explicit
+    ("kipan", "Concrete"):   0.002,
+    ("kipan", "L-Concrete"): 0.002,
+    ("brca",  "LSPIN"):      0.007,
+    ("brca",  "L-LSPIN"):    0.007,
+    ("brca",  "Concrete"):   0.0022,
+    ("brca",  "L-Concrete"): 0.0022,
 }
 
 SHOWCASE_FAMILY_ALIASES = {
@@ -366,6 +402,36 @@ def _goal1_sweep_variants(
             "goal1_target_reference": False,
         })
 
+    # lambda=0 floor variants: gate fully open, should recover MLP / Linear Cox performance.
+    # One variant per gate type × predictor combination. Used as sanity-check that the gated
+    # architecture matches its ungated baseline when no sparsity pressure is applied.
+    floor_variants = [
+        ("lspin_tf",  "mlp",    "LSPIN",       float(lspin_no["gate_sigma"])),
+        ("concrete",  "mlp",    "Concrete",     float(concrete_no["gate_sigma"])),
+        ("lspin_tf",  "linear", "L-LSPIN",      float(lspin_sm["gate_sigma"])),
+        ("concrete",  "linear", "L-Concrete",   float(concrete_sm["gate_sigma"])),
+    ]
+    for gate_type, predictor, family, gate_sigma in floor_variants:
+        variants.append({
+            "experiment": "goal1",
+            "variant_key": f"goal1_floor_{family.lower().replace('-', '')}",
+            "variant_label": f"{family} floor (λ=0)",
+            "model_family": family,
+            "model_kind": "gated",
+            "predictor": predictor,
+            "gate_type": gate_type,
+            "gate_sigma": gate_sigma,
+            "lambda_sparse": 0.0,
+            "lambda_sample_smooth": 0.0,
+            "selection": "floor",
+            "sigma_match": "exact",
+            "lambda_base": 0.0,
+            "lambda_multiplier": 0.0,
+            "goal0_target_reference": False,
+            "goal1_group": "floor",
+            "goal1_target_reference": False,
+        })
+
     return variants
 
 
@@ -399,6 +465,21 @@ def _build_variants(
         showcase_csv, family="Concrete", selection="smooth", sigma_target=defaults["concrete_sigma"]
     )
 
+    # Override lambda_sparse anchors in showcase rows where our tuning sweeps showed
+    # the showcase value is far from the optimal regime.
+    def _apply_lambda_anchor(row: Dict, family: str) -> Dict:
+        anchor = GATED_LAMBDA_ANCHORS.get((dataset_name, family))
+        if anchor is not None:
+            row = dict(row)
+            row["lambda_sparse"] = float(anchor)
+        return row
+
+    lspin_no  = _apply_lambda_anchor(lspin_no,  "LSPIN")
+    lspin_sm  = _apply_lambda_anchor(lspin_sm,  "LSPIN")
+    lspin_alt = _apply_lambda_anchor(lspin_alt, "LSPIN")
+    concrete_no = _apply_lambda_anchor(concrete_no, "Concrete")
+    concrete_sm = _apply_lambda_anchor(concrete_sm, "Concrete")
+
     goal0 = _goal0_sweep_variants(lspin_no, concrete_no, goal0_lambda_multipliers)
 
     goal1 = _goal1_sweep_variants(
@@ -414,6 +495,12 @@ def _build_variants(
         concrete_smooth_lambda_scale=concrete_smooth_lambda_scale,
         linear_gated_lambda_multipliers=linear_gated_lambda_multipliers,
     )
+
+    # Inject per-(dataset, model_family) best training configs into each variant
+    for v in goal0 + goal1:
+        cfg = GATED_BEST_CONFIGS.get((dataset_name, v.get("model_family", "")), {})
+        if cfg:
+            v["_best_cfg"] = cfg
 
     if mode == "goal0":
         return goal0
@@ -684,18 +771,25 @@ def _run_gated_task(
 ) -> Dict[str, object]:
     import torch
 
+    best_cfg = task.get("_best_cfg", {})
+
     temperature = float(args.lspin_temperature)
     if task["gate_type"] == "concrete":
         temperature = float(args.concrete_temperature)
 
+    _predictor = str(task.get("predictor", "mlp"))
     model = sds.make_model(
         input_dim=int(split["input_dim"]),
         gate_type=str(task["gate_type"]),
         gate_sigma=float(task["gate_sigma"]),
         temperature=temperature,
         concrete_mode=(str(args.concrete_mode) if str(task["gate_type"]) == "concrete" else "relaxed"),
-        predictor=str(task.get("predictor", "mlp")),
-        gating_hidden_dim=int(getattr(args, "gating_hidden_dim", 128)),
+        predictor=_predictor,
+        gating_hidden_dim=int(best_cfg.get("gating_hidden_dim", getattr(args, "gating_hidden_dim", 128))),
+        gate_hidden_dropout_p=float(best_cfg.get("gate_hidden_dropout_p", 0.0)),
+        risk_hidden_dims=tuple(getattr(args, "risk_hidden", [64, 32])) if _predictor == "mlp" else (),
+        risk_dropout_p=float(getattr(args, "risk_dropout", 0.1)) if _predictor == "mlp" else 0.0,
+        lspin_init_bias=float(getattr(args, "lspin_init_bias", -2.0)),
     ).to(device)
 
     init_artifact = ""
@@ -718,14 +812,20 @@ def _run_gated_task(
         split["Xt_test"], split["tt_test"], split["et_test"],
         A_sample_train=split["A_train"],
         config=sds.GatedTrainConfig(
-            lr=float(args.gated_lr),
+            lr=float(best_cfg.get("gated_lr", args.gated_lr)),
             weight_decay=float(args.weight_decay),
+            gate_weight_decay=best_cfg.get("gate_weight_decay"),
             batch_size=int(args.batch_size),
             max_epochs=int(args.max_epochs),
-            patience=int(args.patience),
+            patience=int(best_cfg.get("patience", args.patience)),
             lambda_sparse=float(task["lambda_sparse"]),
             lambda_sample_smooth=float(task["lambda_sample_smooth"]),
             lambda_gene_smooth=0.0,
+            lr_schedule=best_cfg.get("lr_schedule"),
+            lr_warmup_epochs=10 if best_cfg.get("lr_schedule") == "cosine" else 0,
+            temp_schedule=best_cfg.get("temp_schedule"),
+            temp_init=0.8 if best_cfg.get("temp_schedule") is not None else None,
+            temp_final=0.05 if best_cfg.get("temp_schedule") is not None else None,
         ),
         device=device,
         verbose=False,
@@ -1238,6 +1338,25 @@ def _choose_eval_split_runs(
     return sub.head(int(n_eval_splits)).reset_index(drop=True)
 
 
+def _recover_best_cfg(init_row: pd.Series) -> Dict:
+    raw = init_row.get("_best_cfg", None)
+    if isinstance(raw, dict):
+        return dict(raw)
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = ast.literal_eval(raw)
+            if isinstance(parsed, dict):
+                return dict(parsed)
+        except (ValueError, SyntaxError):
+            pass
+    return dict(
+        GATED_BEST_CONFIGS.get(
+            (str(init_row.get("dataset", "")), str(init_row.get("model_family", ""))),
+            {},
+        )
+    )
+
+
 def _build_fixed_init_tasks(
     args: argparse.Namespace,
     selected_df: pd.DataFrame,
@@ -1258,6 +1377,7 @@ def _build_fixed_init_tasks(
         dataset_name = str(row["dataset"])
         for split_block_id, (_, init_row) in enumerate(eval_split_rows.iterrows()):
             split_seed = int(init_row["split_seed"])
+            best_cfg = _recover_best_cfg(init_row)
             for rep_offset in range(args.n_reps_per_eval_split):
                 train_seed = int(args.eval_train_seed_base + split_block_id * 1000 + rep_offset)
                 run_seed = train_seed
@@ -1296,6 +1416,7 @@ def _build_fixed_init_tasks(
                     "lambda_base": init_row.get("lambda_base", np.nan),
                     "lambda_multiplier": init_row.get("lambda_multiplier", np.nan),
                     "goal0_target_reference": init_row.get("goal0_target_reference", False),
+                    "_best_cfg": best_cfg,
                 })
     tasks.sort(key=lambda row: (row["dataset"], row["experiment"], row["variant_key"], row["run_seed"]))
     return tasks
@@ -1371,10 +1492,26 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--gated-lr", type=float, default=1e-2)
     p.add_argument("--weight-decay", type=float, default=1e-5)
     p.add_argument("--lspin-temperature", type=float, default=0.5)
+    p.add_argument(
+        "--lspin-init-bias",
+        type=float,
+        default=0.0,
+        help="Initial bias for the final LSPIN gate layer. Default 0.0 keeps the gate near-open at init; "
+             "set to -2.0 to reproduce the older TensorFlow-faithful closed-at-init setup.",
+    )
     p.add_argument("--concrete-temperature", type=float, default=0.3)
     p.add_argument("--concrete-mode", choices=["relaxed", "ste"], default="ste")
     p.add_argument("--global-freq-threshold", type=float, default=0.05)
 
+    p.add_argument(
+        "--risk-hidden", type=int, nargs="+", default=[64, 32],
+        help="Hidden layer widths for the gated MLP risk network. Default [64, 32] matches "
+             "the standalone MLP baseline for a fair architectural comparison.",
+    )
+    p.add_argument(
+        "--risk-dropout", type=float, default=0.1,
+        help="Dropout probability in the gated MLP risk network (default 0.1, matching MLP baseline).",
+    )
     p.add_argument("--mlp-hidden", type=int, nargs="+", default=[64, 32])
     p.add_argument("--mlp-dropout", type=float, default=0.1)
     p.add_argument("--mlp-lr", type=float, default=1e-3)
@@ -1387,9 +1524,9 @@ def _parse_args() -> argparse.Namespace:
         "--stg-hidden-dims",
         type=int,
         nargs="+",
-        default=None,
+        default=[64, 32],
         help="Hidden layer widths for MLP+STG risk network (overrides --stg-hidden-dim). "
-             "E.g. --stg-hidden-dims 64 32 matches the plain MLP architecture.",
+             "Default [64, 32] matches the plain MLP architecture.",
     )
     p.add_argument(
         "--gating-hidden-dim",
@@ -1492,7 +1629,7 @@ def main() -> None:
     manifest_rows = []
     for dataset_name, variants in variants_by_dataset.items():
         for variant in variants:
-            manifest_rows.append({"dataset": dataset_name, **variant})
+            manifest_rows.append({"dataset": dataset_name, **{k: v for k, v in variant.items() if k != "_best_cfg"}})
     manifest_df = pd.DataFrame(manifest_rows)
     manifest_df.to_csv(args.results_dir / "variant_manifest.csv", index=False)
     print(f"[main] wrote variant_manifest.csv rows={len(manifest_df)}", flush=True)

@@ -40,6 +40,43 @@ PANCAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "tcga_pancan_xena_2026
 RESULTS_DEFAULT     = PAPER_ROOT / "data" / "runs" / "ch3_pancan_adaptive_v2"
 
 
+def _family_defaults(args) -> Dict[str, Dict]:
+    return {
+        "LSPIN": {
+            "gate_type": "lspin_tf",
+            "predictor": "mlp",
+            "sigmas": [float(x) for x in args.lspin_sigmas],
+            "lambdas": [float(x) for x in args.lspin_lambdas],
+            "temperature": float(args.lspin_temperature),
+            "patience": int(args.lspin_patience),
+        },
+        "L-LSPIN": {
+            "gate_type": "lspin_tf",
+            "predictor": "linear",
+            "sigmas": [float(x) for x in args.llspin_sigmas],
+            "lambdas": [float(x) for x in args.llspin_lambdas],
+            "temperature": float(args.lspin_temperature),
+            "patience": int(args.llspin_patience),
+        },
+        "Concrete": {
+            "gate_type": "concrete",
+            "predictor": "mlp",
+            "sigmas": [float(x) for x in args.concrete_sigmas],
+            "lambdas": [float(x) for x in args.concrete_lambdas],
+            "temperature": float(args.concrete_temperature),
+            "patience": int(args.concrete_patience),
+        },
+        "L-Concrete": {
+            "gate_type": "concrete",
+            "predictor": "linear",
+            "sigmas": [float(x) for x in args.lconcrete_sigmas],
+            "lambdas": [float(x) for x in args.lconcrete_lambdas],
+            "temperature": float(args.concrete_temperature),
+            "patience": int(args.lconcrete_patience),
+        },
+    }
+
+
 # ── Worker ────────────────────────────────────────────────────────────────────
 
 def _worker(
@@ -123,16 +160,24 @@ def _worker(
     cluster_rows: List[Dict] = []
     hist_rows:    List[pd.DataFrame] = []
 
-    temperature_map = {"lspin_tf": lspin_temperature, "concrete": concrete_temperature}
-
     n_cfg = len(configs)
     for cfg_i, cfg in enumerate(configs):
         family_label = cfg["family_label"]
         gate_type    = cfg["gate_type"]
+        predictor    = str(cfg.get("predictor", "mlp"))
         gate_sigma   = float(cfg["gate_sigma"])
-        temperature  = temperature_map[gate_type]
+        temperature  = float(cfg.get("temperature", lspin_temperature if gate_type == "lspin_tf" else concrete_temperature))
         lam          = float(cfg["lam"])
         smooth       = float(cfg["smooth"])
+        patience_cfg = int(cfg.get("patience", patience))
+        gating_hidden_dim = int(cfg.get("gating_hidden_dim", 128))
+        gate_hidden_dropout = float(cfg.get("gate_hidden_dropout_p", 0.0))
+        risk_hidden_dims = tuple(int(x) for x in cfg.get("risk_hidden_dims", (64,)))
+        risk_dropout_p = float(cfg.get("risk_dropout_p", 0.0))
+        lspin_init_bias = float(cfg.get("lspin_init_bias", -2.0))
+        gate_weight_decay_cfg = cfg.get("gate_weight_decay", None)
+        if gate_weight_decay_cfg is not None:
+            gate_weight_decay_cfg = float(gate_weight_decay_cfg)
         global_cfg_idx = cfg["global_cfg_idx"]
         cfg_seeds    = [
             int(seed + 10000 * global_cfg_idx + k)
@@ -164,7 +209,7 @@ def _worker(
                     gate_sigma=gate_sigma,
                     lam=lam,
                     lambda_sample_smooth=smooth,
-                    patience=patience,
+                    patience=patience_cfg,
                     A_sample_train=A_train,
                     device=device,
                     lr=lr,
@@ -173,6 +218,13 @@ def _worker(
                     weight_decay=weight_decay,
                     batch_size=batch_size,
                     max_epochs=max_epochs,
+                    predictor=predictor,
+                    gating_hidden_dim=gating_hidden_dim,
+                    gate_hidden_dropout_p=gate_hidden_dropout,
+                    risk_hidden_dims=risk_hidden_dims,
+                    risk_dropout_p=risk_dropout_p,
+                    lspin_init_bias=lspin_init_bias,
+                    gate_weight_decay=gate_weight_decay_cfg,
                     seed=s,
                 )
             except Exception as exc:
@@ -195,9 +247,18 @@ def _worker(
             run_rows.append({
                 "model_family":          family_label,
                 "gate_type":             gate_type,
+                "predictor":             predictor,
                 "gate_sigma":            gate_sigma,
                 "lambda_sparse":         lam,
                 "lambda_sample_smooth":  smooth,
+                "temperature":           temperature,
+                "patience":              patience_cfg,
+                "gating_hidden_dim":     gating_hidden_dim,
+                "gate_hidden_dropout_p": gate_hidden_dropout,
+                "risk_hidden_dims":      repr(risk_hidden_dims),
+                "risk_dropout_p":        risk_dropout_p,
+                "lspin_init_bias":       lspin_init_bias,
+                "gate_weight_decay":     gate_weight_decay_cfg,
                 "seed":                  int(s),
                 "rep_id":                rep_id,
                 "global_cfg_idx":        global_cfg_idx,
@@ -383,30 +444,29 @@ def _dispatch_phase(
 def _build_configs(args) -> List[Dict]:
     configs = []
     idx = 0
-    for sigma in args.lspin_sigmas:
-        for lam in args.lspin_lambdas:
-            for smooth in args.sample_smooth_grid:
-                configs.append({
-                    "family_label": "LSPIN",
-                    "gate_type":    "lspin_tf",
-                    "gate_sigma":   float(sigma),
-                    "lam":          float(lam),
-                    "smooth":       float(smooth),
-                    "global_cfg_idx": idx,
-                })
-                idx += 1
-    for sigma in args.concrete_sigmas:
-        for lam in args.concrete_lambdas:
-            for smooth in args.sample_smooth_grid:
-                configs.append({
-                    "family_label": "Concrete",
-                    "gate_type":    "concrete",
-                    "gate_sigma":   float(sigma),
-                    "lam":          float(lam),
-                    "smooth":       float(smooth),
-                    "global_cfg_idx": idx,
-                })
-                idx += 1
+    for family_label, spec in _family_defaults(args).items():
+        for sigma in spec["sigmas"]:
+            for lam in spec["lambdas"]:
+                for smooth in args.sample_smooth_grid:
+                    predictor = str(spec["predictor"])
+                    configs.append({
+                        "family_label": family_label,
+                        "gate_type": spec["gate_type"],
+                        "predictor": predictor,
+                        "gate_sigma": float(sigma),
+                        "lam": float(lam),
+                        "smooth": float(smooth),
+                        "temperature": float(spec["temperature"]),
+                        "patience": int(spec["patience"]),
+                        "gating_hidden_dim": int(args.gated_hidden_dim),
+                        "gate_hidden_dropout_p": float(args.gate_hidden_dropout_p),
+                        "risk_hidden_dims": tuple(int(x) for x in args.risk_hidden_dims) if predictor == "mlp" else (),
+                        "risk_dropout_p": float(args.risk_dropout_p if predictor == "mlp" else 0.0),
+                        "lspin_init_bias": float(args.lspin_init_bias),
+                        "gate_weight_decay": float(args.gate_weight_decay),
+                        "global_cfg_idx": idx,
+                    })
+                    idx += 1
     return configs
 
 
@@ -434,15 +494,32 @@ def _parse():
     p.add_argument("--batch-size",   type=int,   default=128)
     p.add_argument("--max-epochs",   type=int,   default=300)
 
-    # Lambda grids (PanCan adaptive v2 — same as v1)
-    p.add_argument("--lspin-lambdas", type=float, nargs="+",
-                   default=[0.0009, 0.0007, 0.00055, 0.0004, 0.0003])
-    p.add_argument("--concrete-lambdas", type=float, nargs="+",
-                   default=[0.0014, 0.0012, 0.0010, 0.0008, 0.0006])
+    p.add_argument("--gated-hidden-dim", type=int, default=64)
+    p.add_argument("--risk-hidden-dims", type=int, nargs="+", default=[64, 32])
+    p.add_argument("--risk-dropout-p", type=float, default=0.1)
+    p.add_argument("--gate-hidden-dropout-p", type=float, default=0.0)
+    p.add_argument("--gate-weight-decay", type=float, default=0.0)
+    p.add_argument("--lspin-init-bias", type=float, default=0.0)
+    p.add_argument("--lspin-patience", type=int, default=12)
+    p.add_argument("--llspin-patience", type=int, default=20)
+    p.add_argument("--concrete-patience", type=int, default=20)
+    p.add_argument("--lconcrete-patience", type=int, default=20)
 
-    # Two sigmas per family
-    p.add_argument("--lspin-sigmas",    type=float, nargs="+", default=[0.25, 0.20])
-    p.add_argument("--concrete-sigmas", type=float, nargs="+", default=[0.10, 0.15])
+    # Lambda grids centered on the current gentle regime.
+    p.add_argument("--lspin-lambdas", type=float, nargs="+",
+                   default=[0.0012, 0.0009, 0.0007, 0.0006, 0.0005])
+    p.add_argument("--llspin-lambdas", type=float, nargs="+",
+                   default=[0.0025, 0.0018, 0.0014, 0.0011, 0.0009])
+    p.add_argument("--concrete-lambdas", type=float, nargs="+",
+                   default=[0.0020, 0.0017, 0.0014, 0.0012, 0.0010])
+    p.add_argument("--lconcrete-lambdas", type=float, nargs="+",
+                   default=[0.0030, 0.0023, 0.0018, 0.0014, 0.0012])
+
+    # Two sigmas per family.
+    p.add_argument("--lspin-sigmas",    type=float, nargs="+", default=[0.20, 0.17])
+    p.add_argument("--llspin-sigmas",   type=float, nargs="+", default=[0.20, 0.17])
+    p.add_argument("--concrete-sigmas", type=float, nargs="+", default=[0.15, 0.12])
+    p.add_argument("--lconcrete-sigmas", type=float, nargs="+", default=[0.15, 0.12])
 
     # Temperatures
     p.add_argument("--lspin-temperature",    type=float, default=0.5)

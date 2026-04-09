@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Quick linear-risk gated-model probe for gate interpretability.
+"""Quick gated patient-subset signal probe for gate interpretability.
 
 This is intentionally not a full adaptive sweep. It reuses the selected
-adaptive hyperparameters, swaps the survival head to a linear predictor, trains
-a small number of folds/replicates, and asks whether a gated feature is more
+adaptive hyperparameters, trains a small number of folds/replicates using the
+selected gated model family, and asks whether a selected feature is more
 univariately predictive inside the patients where it is gated on than random
 features evaluated on those same patients.
 """
@@ -42,7 +42,7 @@ RUN_DEFAULTS = {
     ),
     "kipan": Path(
         "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-        "ch3_kipan_adaptive_v2_selfcontained_ste_lspinmoderate_randominit_20260405_081219"
+        "adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan"
     ),
     "brca": Path(
         "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
@@ -62,21 +62,54 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--results-dir", type=Path, default=None)
     p.add_argument("--data-dir", type=Path, default=None)
     p.add_argument("--outdir", type=Path, default=None)
-    p.add_argument("--families", nargs="+", default=["LSPIN", "Concrete"], choices=["LSPIN", "Concrete"])
+    p.add_argument(
+        "--families",
+        nargs="+",
+        default=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"],
+        choices=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"],
+    )
     p.add_argument("--selections", nargs="+", default=["nosmooth", "smooth"], choices=["nosmooth", "smooth"])
     p.add_argument(
-        "--lspin-smooth-lambda-scales",
+        "--lambda-scale-families",
         nargs="+",
-        type=float,
-        default=[1.0],
-        help="Duplicate the selected LSPIN smooth config with scaled lambda_sparse values.",
+        default=None,
+        choices=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"],
+        help="Families whose selected configs should be duplicated with scaled lambda_sparse values. Defaults to --families.",
     )
     p.add_argument(
-        "--lspin-smooth-smooth-values",
+        "--lambda-scale-selections",
+        nargs="+",
+        default=None,
+        choices=["nosmooth", "smooth"],
+        help="Selections whose selected configs should be duplicated with scaled lambda_sparse values. Defaults to --selections.",
+    )
+    p.add_argument(
+        "--lambda-scales",
         nargs="+",
         type=float,
         default=None,
-        help="Optional lambda_sample_smooth values to try for LSPIN smooth variants.",
+        help="Duplicate matching selected configs with scaled lambda_sparse values. Defaults to [1.0] unless overridden.",
+    )
+    p.add_argument(
+        "--smooth-lambda-scale-families",
+        nargs="+",
+        default=["LSPIN", "L-LSPIN"],
+        choices=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"],
+        help="Deprecated alias for scaling smooth selections only; superseded by --lambda-scale-families/--lambda-scale-selections/--lambda-scales.",
+    )
+    p.add_argument(
+        "--smooth-lambda-scales",
+        nargs="+",
+        type=float,
+        default=[1.0],
+        help="Duplicate selected smooth configs with scaled lambda_sparse values.",
+    )
+    p.add_argument(
+        "--smooth-smooth-values",
+        nargs="+",
+        type=float,
+        default=None,
+        help="Optional lambda_sample_smooth values to try for duplicated smooth variants.",
     )
     p.add_argument("--include-ungated-linear", action="store_true")
     p.add_argument("--n-folds", type=int, default=2)
@@ -122,45 +155,83 @@ def _tag_float(x: float) -> str:
 
 
 def _selected_configs(
+    dataset: str,
     results_dir: Path,
     families: list[str],
     selections: list[str],
     *,
-    lspin_smooth_lambda_scales: list[float],
-    lspin_smooth_smooth_values: list[float] | None,
+    lambda_scale_families: list[str],
+    lambda_scale_selections: list[str],
+    lambda_scales: list[float],
+    smooth_smooth_values: list[float] | None,
 ) -> pd.DataFrame:
     cfg = pd.read_csv(results_dir / "selected_comparison_configs.csv")
     cfg["family"] = cfg["family"].replace({"HardSigmoid": "LSPIN"}).astype(str)
     cfg["selection"] = cfg["selection"].astype(str)
     cfg = cfg[cfg["family"].isin(families) & cfg["selection"].isin(selections)].copy()
-    cfg["gate_type"] = np.where(cfg["family"].eq("Concrete"), "concrete", "lspin_tf")
-    cfg["temperature"] = np.where(cfg["family"].eq("Concrete"), 0.3, 0.5)
-    cfg["concrete_mode"] = np.where(cfg["family"].eq("Concrete"), "ste", "relaxed")
     if cfg.empty:
         raise RuntimeError("No selected configs matched requested families/selections.")
     variants = []
     for _, row in cfg.iterrows():
-        if str(row["family"]) == "LSPIN" and str(row["selection"]) == "smooth":
+        if (
+            str(row["selection"]) in set(lambda_scale_selections)
+            and str(row["family"]) in set(lambda_scale_families)
+        ):
             smooth_values = (
                 [float(row["lambda_sample_smooth"])]
-                if lspin_smooth_smooth_values is None
-                else [float(x) for x in lspin_smooth_smooth_values]
+                if (str(row["selection"]) != "smooth" or smooth_smooth_values is None)
+                else [float(x) for x in smooth_smooth_values]
             )
-            for scale in lspin_smooth_lambda_scales:
+            for scale in lambda_scales:
                 for smooth_value in smooth_values:
                     v = row.copy()
                     v["lambda_sparse"] = float(row["lambda_sparse"]) * float(scale)
                     v["lambda_sample_smooth"] = float(smooth_value)
                     if float(scale) != 1.0 or abs(float(smooth_value) - float(row["lambda_sample_smooth"])) > 1e-12:
-                        v["selection"] = (
-                            f"smooth_lamx{_tag_float(scale)}"
-                            f"_smooth{_tag_float(smooth_value)}"
-                        )
+                        base_sel = str(row["selection"])
+                        if base_sel == "smooth":
+                            v["selection"] = (
+                                f"smooth_lamx{_tag_float(scale)}"
+                                f"_smooth{_tag_float(smooth_value)}"
+                            )
+                        else:
+                            v["selection"] = f"{base_sel}_lamx{_tag_float(scale)}"
                     variants.append(v)
         else:
             variants.append(row)
     cfg = pd.DataFrame(variants).reset_index(drop=True)
+    defaults = [_family_probe_defaults(dataset, fam) for fam in cfg["family"]]
+    defaults_df = pd.DataFrame(defaults)
+    for col in defaults_df.columns:
+        cfg[col] = defaults_df[col].values
     return cfg
+
+
+def _family_probe_defaults(dataset: str, family: str) -> dict:
+    family = str(family)
+    predictor = "linear" if family in {"L-LSPIN", "L-Concrete"} else "mlp"
+    gate_type = "concrete" if family in {"Concrete", "L-Concrete"} else "lspin_tf"
+    concrete = gate_type == "concrete"
+    out = {
+        "predictor": predictor,
+        "gate_type": gate_type,
+        "temperature": 0.3 if concrete else 0.5,
+        "concrete_mode": "ste" if concrete else "relaxed",
+        "gating_hidden_dim": 64,
+        "gate_hidden_dropout_p": 0.0,
+        "risk_hidden_dims": (64, 32) if predictor == "mlp" else (),
+        "risk_dropout_p": 0.1 if predictor == "mlp" else 0.0,
+        "lspin_init_bias": 0.0,
+        "gate_weight_decay": 0.0,
+        "patience": 20,
+    }
+    if family == "LSPIN":
+        out["patience"] = 12
+    elif family == "L-LSPIN":
+        out["patience"] = 35 if dataset == "brca" else 20
+    elif family in {"Concrete", "L-Concrete"}:
+        out["patience"] = 20
+    return out
 
 
 def _split_train_val(train_idx: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray]:
@@ -280,7 +351,7 @@ def _plot_summary(summary: pd.DataFrame, out_png: Path) -> None:
         ax.set_xticklabels(order, rotation=35, ha="right")
         ax.grid(axis="y", color="0.9", linewidth=0.8)
         ax.spines[["top", "right"]].set_visible(False)
-    fig.suptitle("Linear-risk gated probe: patient-subset univariate signal", y=1.03)
+    fig.suptitle("Gated patient-subset signal probe: univariate enrichment", y=1.03)
     fig.tight_layout()
     out_png.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_png, dpi=300, bbox_inches="tight")
@@ -290,17 +361,25 @@ def _plot_summary(summary: pd.DataFrame, out_png: Path) -> None:
 def _pretty_label(family: str, selection: str) -> str:
     family = str(family)
     selection = str(selection)
-    if selection == "nosmooth":
+    if selection == "nosmooth" or selection.startswith("nosmooth_lamx"):
         return f"{family}\nno smooth"
     if selection == "smooth":
         return f"{family}\nsmooth"
-    if selection.startswith("smooth_lamx0p25"):
-        return f"{family}\nsmooth"
     if selection.startswith("smooth_lamx"):
-        return f"{family}\n{selection.replace('_', ' ')}"
+        return f"{family}\nsmooth"
     if selection == "none":
         return family
     return f"{family}\n{selection}"
+
+
+def _family_color(family: str) -> str:
+    return {
+        "LSPIN": "#bc3c29",
+        "Concrete": "#0f6b63",
+        "L-LSPIN": "#7f3c8d",
+        "L-Concrete": "#1b9e77",
+        "UngatedLinear": "#4c78a8",
+    }.get(str(family), "#4c78a8")
 
 
 def _aggregate_significance(subset: pd.DataFrame) -> pd.DataFrame:
@@ -356,8 +435,9 @@ def _plot_cindex_khard(runs: pd.DataFrame, out_png: Path) -> None:
     ]:
         vals = [df.loc[df["label"].eq(label), metric].dropna().to_numpy() for label in order]
         parts = ax.violinplot(vals, showmedians=True, widths=0.75)
-        for body in parts["bodies"]:
-            body.set_facecolor("#6baed6")
+        for body, label in zip(parts["bodies"], order):
+            family = str(df.loc[df["label"].eq(label), "family"].iloc[0])
+            body.set_facecolor(_family_color(family))
             body.set_edgecolor("0.2")
             body.set_alpha(0.55)
         for key in ["cbars", "cmins", "cmaxes", "cmedians"]:
@@ -368,7 +448,7 @@ def _plot_cindex_khard(runs: pd.DataFrame, out_png: Path) -> None:
         ax.set_ylabel(ylabel)
         ax.grid(axis="y", color="0.9", linewidth=0.8)
         ax.spines[["top", "right"]].set_visible(False)
-    fig.suptitle("Linear-risk gated probe: prediction and sparsity", y=1.03)
+    fig.suptitle("Gated patient-subset signal probe: prediction and sparsity", y=1.03)
     fig.tight_layout()
     fig.savefig(out_png, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -383,8 +463,9 @@ def _plot_gene_delta(subset: pd.DataFrame, out_png: Path) -> None:
     fig, ax = plt.subplots(figsize=(max(8.0, 0.85 * len(order) + 2.0), 4.4))
     vals = [df.loc[df["label"].eq(label), "target_minus_random_median"].dropna().to_numpy() for label in order]
     parts = ax.violinplot(vals, showmedians=True, widths=0.75)
-    for body in parts["bodies"]:
-        body.set_facecolor("#f58518")
+    for body, label in zip(parts["bodies"], order):
+        family = str(df.loc[df["label"].eq(label), "family"].iloc[0])
+        body.set_facecolor(_family_color(family))
         body.set_edgecolor("0.2")
         body.set_alpha(0.55)
     for key in ["cbars", "cmins", "cmaxes", "cmedians"]:
@@ -419,12 +500,13 @@ def _plot_gated_vs_random_signal(subset: pd.DataFrame, out_png: Path) -> None:
     ]
     width = 0.36
     fig, ax = plt.subplots(figsize=(max(8.0, 0.9 * len(order) + 2.0), 4.2))
-    ax.bar(x - width / 2, target, width=width, label="Gated gene", color="#4c78a8", edgecolor="0.2")
+    gate_colors = [_family_color(str(df.loc[df["label"].eq(label), "family"].iloc[0])) for label in order]
+    ax.bar(x - width / 2, target, width=width, label="Gated gene", color=gate_colors, edgecolor="0.2")
     ax.bar(x + width / 2, random, width=width, label="Random-gene median", color="#bab0ac", edgecolor="0.2")
     ax.set_xticks(x)
     ax.set_xticklabels(order, rotation=35, ha="right")
     ax.set_ylabel("Median patient-subset Cox signal, -log10(p)")
-    ax.set_title("Within gated patients, selected genes show stronger univariate signal")
+    ax.set_title("Within selected patients, chosen genes show stronger univariate signal")
     ax.legend(frameon=False)
     ax.grid(axis="y", color="0.9", linewidth=0.8)
     ax.spines[["top", "right"]].set_visible(False)
@@ -459,7 +541,7 @@ def _plot_gated_vs_random_boxplots(
     xticks = []
     xticklabels = []
     width = 0.28
-    colors = {"Gated gene": "#4c78a8", "Random median": "#bab0ac"}
+    random_color = "#bab0ac"
     max_y = 0.0
     for i, ((family, selection), label) in enumerate(zip(order_keys, order_labels), start=1):
         sub = df[(df["family"].eq(family)) & (df["selection"].eq(selection))]
@@ -478,11 +560,12 @@ def _plot_gated_vs_random_boxplots(
             whiskerprops={"linewidth": 0.8, "color": "0.25"},
             capprops={"linewidth": 0.8, "color": "0.25"},
         )
-        for patch, name in zip(bp["boxes"], ["Gated gene", "Random median"]):
-            patch.set_facecolor(colors[name])
+        gated_color = _family_color(str(family))
+        for patch, color in zip(bp["boxes"], [gated_color, random_color]):
+            patch.set_facecolor(color)
             patch.set_alpha(0.55)
         # light jittered sample to show distribution without drowning the plot
-        for pos, values, name in zip(positions, data, ["Gated gene", "Random median"]):
+        for pos, values, color in zip(positions, data, [gated_color, random_color]):
             if len(values):
                 idx = rng.choice(np.arange(len(values)), size=min(len(values), 200), replace=False)
                 jitter = rng.normal(0, 0.025, size=len(idx))
@@ -490,7 +573,7 @@ def _plot_gated_vs_random_boxplots(
                     np.full(len(idx), pos) + jitter,
                     values[idx],
                     s=5,
-                    color=colors[name],
+                    color=color,
                     alpha=0.16,
                     linewidths=0,
                 )
@@ -514,9 +597,9 @@ def _plot_gated_vs_random_boxplots(
     ax.grid(axis="y", color="0.9", linewidth=0.8)
     ax.spines[["top", "right"]].set_visible(False)
     handles = [
-        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor=colors["Gated gene"],
+        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#4c78a8",
                    markeredgecolor="0.25", markersize=9, label="Gated gene"),
-        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor=colors["Random median"],
+        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor=random_color,
                    markeredgecolor="0.25", markersize=9, label="Random median"),
     ]
     ax.legend(handles=handles, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.20), ncol=2)
@@ -529,17 +612,29 @@ def main() -> None:
     args = _parse_args()
     results_dir = args.results_dir or RUN_DEFAULTS[args.dataset]
     data_dir = args.data_dir or DATA_DEFAULTS[args.dataset]
-    outdir = args.outdir or (results_dir / f"linear_gated_probe_{args.dataset}_{args.n_folds}fold_{args.n_reps}rep")
+    outdir = args.outdir or (results_dir / f"gated_patient_subset_signal_probe_{args.dataset}_{args.n_folds}fold_{args.n_reps}rep")
     outdir.mkdir(parents=True, exist_ok=True)
 
     data = _load_data(args.dataset, data_dir)
     X, time, event, histo, genes = _combined_arrays(data)
     configs = _selected_configs(
+        args.dataset,
         results_dir,
         args.families,
         args.selections,
-        lspin_smooth_lambda_scales=[float(x) for x in args.lspin_smooth_lambda_scales],
-        lspin_smooth_smooth_values=args.lspin_smooth_smooth_values,
+        lambda_scale_families=[
+            str(x) for x in
+            (args.lambda_scale_families if args.lambda_scale_families is not None else args.smooth_lambda_scale_families)
+        ],
+        lambda_scale_selections=[
+            str(x) for x in
+            (args.lambda_scale_selections if args.lambda_scale_selections is not None else args.selections)
+        ],
+        lambda_scales=[
+            float(x) for x in
+            (args.lambda_scales if args.lambda_scales is not None else args.smooth_lambda_scales)
+        ],
+        smooth_smooth_values=args.smooth_smooth_values,
     )
     kf = KFold(n_splits=int(args.n_folds), shuffle=True, random_state=int(args.seed))
     rng = np.random.default_rng(int(args.seed))
@@ -571,14 +666,12 @@ def main() -> None:
                 tt_test=sds.as_torch(time[holdout]),
                 et_test=sds.as_torch(event[holdout]),
                 input_dim=X.shape[1],
-                patience=int(args.patience),
                 A_sample_train=A,
                 device=args.device,
                 lr=float(args.lr),
                 weight_decay=float(args.weight_decay),
                 batch_size=int(args.batch_size),
                 max_epochs=int(args.max_epochs),
-                predictor="linear",
                 seed=seed,
             )
             for _, cfg in configs.iterrows():
@@ -590,8 +683,16 @@ def main() -> None:
                     gate_sigma=float(cfg["gate_sigma"]),
                     lam=float(cfg["lambda_sparse"]),
                     lambda_sample_smooth=float(cfg["lambda_sample_smooth"]),
+                    patience=int(cfg.get("patience", args.patience)),
                     temperature=float(cfg["temperature"]),
                     concrete_mode=str(cfg["concrete_mode"]),
+                    predictor=str(cfg["predictor"]),
+                    gating_hidden_dim=int(cfg["gating_hidden_dim"]),
+                    gate_hidden_dropout_p=float(cfg["gate_hidden_dropout_p"]),
+                    risk_hidden_dims=tuple(cfg["risk_hidden_dims"]),
+                    risk_dropout_p=float(cfg["risk_dropout_p"]),
+                    lspin_init_bias=float(cfg["lspin_init_bias"]),
+                    gate_weight_decay=float(cfg["gate_weight_decay"]),
                 )
                 _, _, hard_t, _ = sds.get_gates(
                     model,
@@ -696,18 +797,18 @@ def main() -> None:
             )
         )
     aggregate = _aggregate_significance(subset)
-    runs.to_csv(outdir / "linear_gated_probe_runs.csv", index=False)
-    subset.to_csv(outdir / "linear_gated_probe_patient_subset_predictivity.csv", index=False)
-    summary.to_csv(outdir / "linear_gated_probe_patient_subset_predictivity_summary.csv", index=False)
-    aggregate.to_csv(outdir / "linear_gated_probe_patient_subset_predictivity_aggregate_significance.csv", index=False)
-    _plot_summary(summary, outdir / "fig_linear_gated_probe_patient_subset_predictivity.png")
-    _plot_cindex_khard(runs, outdir / "fig_linear_gated_probe_cindex_khard.png")
-    _plot_gene_delta(subset, outdir / "fig_linear_gated_probe_gene_delta.png")
-    _plot_gated_vs_random_signal(subset, outdir / "fig_linear_gated_probe_gated_vs_random_signal.png")
+    runs.to_csv(outdir / "gated_patient_subset_signal_probe_runs.csv", index=False)
+    subset.to_csv(outdir / "gated_patient_subset_signal_probe_patient_subset_predictivity.csv", index=False)
+    summary.to_csv(outdir / "gated_patient_subset_signal_probe_patient_subset_predictivity_summary.csv", index=False)
+    aggregate.to_csv(outdir / "gated_patient_subset_signal_probe_patient_subset_predictivity_aggregate_significance.csv", index=False)
+    _plot_summary(summary, outdir / "fig_gated_patient_subset_signal_probe_patient_subset_predictivity.png")
+    _plot_cindex_khard(runs, outdir / "fig_gated_patient_subset_signal_probe_cindex_khard.png")
+    _plot_gene_delta(subset, outdir / "fig_gated_patient_subset_signal_probe_gene_delta.png")
+    _plot_gated_vs_random_signal(subset, outdir / "fig_gated_patient_subset_signal_probe_gated_vs_random_signal.png")
     _plot_gated_vs_random_boxplots(
         subset,
         aggregate,
-        outdir / "fig_linear_gated_probe_gated_vs_random_signal_boxplots.png",
+        outdir / "fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png",
     )
     print(f"[done] wrote {outdir}", flush=True)
 

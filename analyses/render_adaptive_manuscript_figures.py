@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import sys
 from pathlib import Path
 from typing import Dict, Tuple, Optional
@@ -18,7 +19,10 @@ for p in [str(SDS_SRC), str(LSPIN_ROOT)]:
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.model_selection import ShuffleSplit
+from matplotlib.patches import Patch
+from scipy.stats import ttest_ind
 
 import sparsedeepsurv as sds
 from cleaned_analyses.pipelines import repro_survival_pipeline as rp
@@ -57,9 +61,17 @@ def _norm_family(x: str) -> str:
 def _model_label(family: str, selection: str) -> str:
     if family == "LSPIN":
         return "LSPIN (no smooth)" if selection == "nosmooth" else "LSPIN + patient smooth"
+    if family == "L-LSPIN":
+        return "L-LSPIN (no smooth)" if selection == "nosmooth" else "L-LSPIN + patient smooth"
     if family == "Concrete":
         return "Concrete (no smooth)" if selection == "nosmooth" else "Concrete + patient smooth"
+    if family == "L-Concrete":
+        return "L-Concrete (no smooth)" if selection == "nosmooth" else "L-Concrete + patient smooth"
     raise ValueError(f"Unexpected family: {family}")
+
+
+def _predictor_group(family: str) -> str:
+    return "linear" if family in {"L-LSPIN", "L-Concrete"} else "mlp"
 
 
 def _mean_ci(series: pd.Series) -> Tuple[float, float]:
@@ -87,35 +99,83 @@ def _infer_global_cfg_idx(dataset: str, row: pd.Series) -> Optional[int]:
     if dataset == "kipan":
         from ch3_kipan_adaptive_v2 import _build_configs
         args = SimpleNamespace(
-            lspin_sigmas=[0.25, 0.20],
-            concrete_sigmas=[0.10, 0.15],
-            lspin_lambdas=[0.0018, 0.0014, 0.0011, 0.0009, 0.0007],
-            concrete_lambdas=[0.005, 0.004, 0.003, 0.0025, 0.002],
-            sample_smooth_grid=[0.0, 0.05, 0.1, 0.15],
+            lspin_sigmas=[0.22, 0.20],
+            llspin_sigmas=[0.22, 0.20],
+            concrete_sigmas=[0.15, 0.12],
+            lconcrete_sigmas=[0.15, 0.12],
+            lspin_lambdas=[0.014, 0.0105, 0.00875, 0.007, 0.00525],
+            llspin_lambdas=[0.021, 0.014, 0.0105, 0.00875, 0.007],
+            concrete_lambdas=[0.004, 0.003, 0.0025, 0.002, 0.0015],
+            lconcrete_lambdas=[0.004, 0.003, 0.0025, 0.002, 0.0015],
+            gated_hidden_dim=64,
+            risk_hidden_dims=[64, 32],
+            risk_dropout_p=0.1,
+            gate_hidden_dropout_p=0.0,
+            gate_weight_decay=0.0,
+            lspin_init_bias=0.0,
+            lspin_temperature=0.5,
+            concrete_temperature=0.3,
+            lspin_patience=12,
+            llspin_patience=20,
+            concrete_patience=20,
+            lconcrete_patience=20,
+            sample_smooth_grid=[0.0, 0.025, 0.05, 0.1],
         )
     elif dataset == "brca":
         from ch3_brca_adaptive_v2 import _build_configs
         args = SimpleNamespace(
-            lspin_sigmas=[0.10, 0.15],
-            concrete_sigmas=[0.10, 0.15],
-            lspin_lambdas=[0.010, 0.007, 0.005, 0.0033, 0.0025, 0.0018],
-            concrete_lambdas=[0.004, 0.003, 0.0022, 0.0018, 0.0015, 0.0012],
+            lspin_sigmas=[0.15, 0.12],
+            llspin_sigmas=[0.15, 0.12],
+            concrete_sigmas=[0.15, 0.12],
+            lconcrete_sigmas=[0.15, 0.12],
+            lspin_lambdas=[0.014, 0.0105, 0.00875, 0.007, 0.00525],
+            llspin_lambdas=[0.021, 0.014, 0.0105, 0.00875, 0.007],
+            concrete_lambdas=[0.0055, 0.0044, 0.0033, 0.00275, 0.0022],
+            lconcrete_lambdas=[0.0066, 0.0044, 0.0033, 0.00275, 0.00165],
+            gated_hidden_dim=64,
+            risk_hidden_dims=[64, 32],
+            risk_dropout_p=0.1,
+            gate_hidden_dropout_p=0.0,
+            gate_weight_decay=0.0,
+            lspin_init_bias=0.0,
+            lspin_temperature=0.5,
+            concrete_temperature=0.3,
+            lspin_patience=12,
+            llspin_patience=35,
+            concrete_patience=20,
+            lconcrete_patience=20,
             sample_smooth_grid=[0.0, 0.1, 0.2, 0.4],
         )
     elif dataset == "pancan":
         from ch3_pancan_adaptive_v2 import _build_configs
         args = SimpleNamespace(
-            lspin_sigmas=[0.25, 0.20],
-            concrete_sigmas=[0.10, 0.15],
+            lspin_sigmas=[0.20, 0.17],
+            llspin_sigmas=[0.20, 0.17],
+            concrete_sigmas=[0.15, 0.12],
+            lconcrete_sigmas=[0.15, 0.12],
             lspin_lambdas=[0.0012, 0.0009, 0.0007, 0.0006, 0.0005],
+            llspin_lambdas=[0.0025, 0.0018, 0.0014, 0.0011, 0.0009],
             concrete_lambdas=[0.002, 0.0017, 0.0014, 0.0012, 0.0010],
+            lconcrete_lambdas=[0.0030, 0.0023, 0.0018, 0.0014, 0.0012],
+            gated_hidden_dim=64,
+            risk_hidden_dims=[64, 32],
+            risk_dropout_p=0.1,
+            gate_hidden_dropout_p=0.0,
+            gate_weight_decay=0.0,
+            lspin_init_bias=0.0,
+            lspin_temperature=0.5,
+            concrete_temperature=0.3,
+            lspin_patience=12,
+            llspin_patience=20,
+            concrete_patience=20,
+            lconcrete_patience=20,
             sample_smooth_grid=[0.0, 0.05, 0.1, 0.15],
         )
     else:
         return None
     configs = _build_configs(args)
     family = str(row["family"])
-    gate_type = "lspin_tf" if family == "LSPIN" else "concrete"
+    gate_type = "lspin_tf" if "LSPIN" in family else "concrete"
     for cfg in configs:
         if (
             cfg["family_label"] == family
@@ -176,6 +236,61 @@ def _choose_representative_seed(df_runs: pd.DataFrame, *, family: str, gate_sigm
     stds = sub[cols].std(ddof=0).replace(0, 1.0)
     z = ((sub[cols] - means) / stds).pow(2).sum(axis=1)
     return int(sub.loc[z.idxmin(), "seed"])
+
+
+def _family_model_kwargs(dataset: str, family: str, row: Optional[pd.Series] = None) -> Dict[str, object]:
+    predictor = "linear" if family in {"L-LSPIN", "L-Concrete"} else "mlp"
+    gate_type = "lspin_tf" if "LSPIN" in family else "concrete"
+    base = {
+        "predictor": predictor,
+        "gate_type": gate_type,
+        "gating_hidden_dim": 64,
+        "gate_hidden_dropout_p": 0.0,
+        "risk_hidden_dims": (64, 32) if predictor == "mlp" else (),
+        "risk_dropout_p": 0.1 if predictor == "mlp" else 0.0,
+        "lspin_init_bias": 0.0,
+        "gate_weight_decay": 0.0,
+        "patience": 20,
+        "temperature": 0.5 if gate_type == "lspin_tf" else 0.3,
+    }
+    if family == "LSPIN":
+        base["patience"] = 12
+    elif family == "L-LSPIN":
+        base["patience"] = 35 if dataset == "brca" else 20
+    elif family in {"Concrete", "L-Concrete"}:
+        base["patience"] = 20
+    if row is not None:
+        for key in [
+            "predictor",
+            "gating_hidden_dim",
+            "gate_hidden_dropout_p",
+            "risk_dropout_p",
+            "lspin_init_bias",
+            "gate_weight_decay",
+            "temperature",
+            "patience",
+        ]:
+            if key in row and pd.notna(row[key]):
+                base[key] = row[key]
+        if "risk_hidden_dims" in row and pd.notna(row["risk_hidden_dims"]):
+            val = row["risk_hidden_dims"]
+            if isinstance(val, str):
+                val = val.strip()
+                if val in {"()", "[]", ""}:
+                    base["risk_hidden_dims"] = ()
+                else:
+                    base["risk_hidden_dims"] = tuple(int(x) for x in ast.literal_eval(val))
+            else:
+                base["risk_hidden_dims"] = tuple(val)
+    base["gating_hidden_dim"] = int(base["gating_hidden_dim"])
+    base["gate_hidden_dropout_p"] = float(base["gate_hidden_dropout_p"])
+    base["risk_dropout_p"] = float(base["risk_dropout_p"])
+    base["lspin_init_bias"] = float(base["lspin_init_bias"])
+    base["gate_weight_decay"] = float(base["gate_weight_decay"])
+    base["temperature"] = float(base["temperature"])
+    base["patience"] = int(base["patience"])
+    base["risk_hidden_dims"] = tuple(int(x) for x in base["risk_hidden_dims"])
+    return base
 
 
 def _build_selected_metric_table(selected_cfg: pd.DataFrame, df_runs: pd.DataFrame, df_aff: pd.DataFrame, df_risk: pd.DataFrame, df_cluster: pd.DataFrame) -> pd.DataFrame:
@@ -241,7 +356,17 @@ def _build_selected_metric_table(selected_cfg: pd.DataFrame, df_runs: pd.DataFra
         )
     out = pd.DataFrame(rows)
     if not out.empty:
-        out["model"] = pd.Categorical(out["model"], categories=boxplots.BRIDGE_MODEL_ORDER, ordered=True)
+        model_order = [
+            "LSPIN (no smooth)",
+            "LSPIN + patient smooth",
+            "Concrete (no smooth)",
+            "Concrete + patient smooth",
+            "L-LSPIN (no smooth)",
+            "L-LSPIN + patient smooth",
+            "L-Concrete (no smooth)",
+            "L-Concrete + patient smooth",
+        ]
+        out["model"] = pd.Categorical(out["model"], categories=model_order, ordered=True)
         out = out.sort_values("model").reset_index(drop=True)
     return out
 
@@ -353,6 +478,7 @@ def _write_notebook_style_files(results_dir: Path) -> Tuple[pd.DataFrame, pd.Dat
 
 def _retrain_selected_model(
     *,
+    dataset: str,
     row: pd.Series,
     split: Dict[str, object],
     seed: int,
@@ -360,8 +486,9 @@ def _retrain_selected_model(
     args: argparse.Namespace,
 ):
     family = str(row["family"])
-    gate_type = "lspin_tf" if family == "LSPIN" else "concrete"
-    temperature = float(args.lspin_temperature if family == "LSPIN" else args.concrete_temperature)
+    model_kwargs = _family_model_kwargs(dataset, family, row)
+    gate_type = str(model_kwargs["gate_type"])
+    temperature = float(model_kwargs["temperature"])
     concrete_mode = str(getattr(args, "concrete_mode", "ste"))
 
     sds.set_all_seeds(seed)
@@ -380,15 +507,22 @@ def _retrain_selected_model(
         gate_sigma=float(row["gate_sigma"]),
         lam=float(row["lambda_sparse"]),
         lambda_sample_smooth=float(row["lambda_sample_smooth"]),
-        patience=int(args.patience),
+        patience=int(model_kwargs["patience"]),
         A_sample_train=split["A_train"],
         device=device,
         lr=float(args.lr),
         temperature=temperature,
-        concrete_mode=(concrete_mode if family != "LSPIN" else "relaxed"),
+        concrete_mode=(concrete_mode if gate_type == "concrete" else "relaxed"),
         weight_decay=float(args.weight_decay),
         batch_size=int(args.batch_size),
         max_epochs=int(args.max_epochs),
+        predictor=str(model_kwargs["predictor"]),
+        gating_hidden_dim=int(model_kwargs["gating_hidden_dim"]),
+        gate_hidden_dropout_p=float(model_kwargs["gate_hidden_dropout_p"]),
+        risk_hidden_dims=tuple(model_kwargs["risk_hidden_dims"]),
+        risk_dropout_p=float(model_kwargs["risk_dropout_p"]),
+        lspin_init_bias=float(model_kwargs["lspin_init_bias"]),
+        gate_weight_decay=float(model_kwargs["gate_weight_decay"]),
     )
     return model, info
 
@@ -404,8 +538,6 @@ def _load_phase1_model_if_available(
     args: argparse.Namespace,
 ):
     family = str(row["family"])
-    gate_type = "lspin_tf" if family == "LSPIN" else "concrete"
-    temperature = float(args.lspin_temperature if family == "LSPIN" else args.concrete_temperature)
     concrete_mode = str(getattr(args, "concrete_mode", "ste"))
 
     sub = runs[
@@ -440,12 +572,20 @@ def _load_phase1_model_if_available(
     if sd_path is None:
         return None, None
 
+    model_kwargs = _family_model_kwargs(dataset, family, sub.iloc[0])
+
     model = sds.make_model(
         input_dim=int(input_dim),
-        gate_type=gate_type,
+        gate_type=str(model_kwargs["gate_type"]),
         gate_sigma=float(row["gate_sigma"]),
-        temperature=temperature,
-        concrete_mode=(concrete_mode if family != "LSPIN" else "relaxed"),
+        temperature=float(model_kwargs["temperature"]),
+        concrete_mode=(concrete_mode if str(model_kwargs["gate_type"]) == "concrete" else "relaxed"),
+        predictor=str(model_kwargs["predictor"]),
+        gating_hidden_dim=int(model_kwargs["gating_hidden_dim"]),
+        gate_hidden_dropout_p=float(model_kwargs["gate_hidden_dropout_p"]),
+        risk_hidden_dims=tuple(model_kwargs["risk_hidden_dims"]),
+        risk_dropout_p=float(model_kwargs["risk_dropout_p"]),
+        lspin_init_bias=float(model_kwargs["lspin_init_bias"]),
     ).to(device)
     sd = __import__("torch").load(sd_path, map_location=device)
     model.load_state_dict(sd)
@@ -472,7 +612,12 @@ def _save_heatmaps(
     device = sds.resolve_device(str(getattr(args, "device", "auto")))
 
     heatmap_rows = []
-    stem_family = {"LSPIN": "lspin", "Concrete": "concrete"}
+    stem_family = {
+        "LSPIN": "lspin",
+        "L-LSPIN": "llspin",
+        "Concrete": "concrete",
+        "L-Concrete": "lconcrete",
+    }
     for _, row in selected_cfg.iterrows():
         family = str(row["family"])
         selection = str(row["selection"])
@@ -494,6 +639,7 @@ def _save_heatmaps(
                 smooth=float(row["lambda_sample_smooth"]),
             )
             model, info = _retrain_selected_model(
+                dataset=dataset,
                 row=row,
                 split=split,
                 seed=seed,
@@ -549,11 +695,175 @@ def _save_heatmaps(
     ].to_csv(results_dir / "selected_best_heatmap_configs.csv", index=False)
 
 
+def _selected_metric_df(results_dir: Path, metric: str, *, families: list[str], aggregate_pairs: bool = False) -> pd.DataFrame:
+    cfg = pd.read_csv(results_dir / "selected_comparison_configs.csv")
+    cfg = cfg[cfg["family"].isin(families)].copy()
+    runs = pd.read_csv(results_dir / "notebook_style_models_runs.csv")
+    runs["khard_over_union"] = runs["mean_Khard"] / runs["gene_union_count"].clip(lower=1e-8)
+    pair_map = {
+        "affinity_corr": pd.read_csv(results_dir / "notebook_style_models_affinity_pairs.csv"),
+        "risk_corr": pd.read_csv(results_dir / "notebook_style_models_risk_pairs.csv"),
+        "cluster_ari": pd.read_csv(results_dir / "notebook_style_models_cluster_pairs.csv"),
+    }
+    source = pair_map.get(metric, runs)
+    rows = []
+    for _, row in cfg.iterrows():
+        sub = source[
+            (source["model_family"] == row["family"])
+            & np.isclose(source["lambda_sparse"], row["lambda_sparse"])
+            & np.isclose(source["lambda_sample_smooth"], row["lambda_sample_smooth"])
+        ].copy()
+        if sub.empty:
+            continue
+        if aggregate_pairs and {"run_i", "run_j"}.issubset(sub.columns):
+            left = sub[["run_i", metric]].rename(columns={"run_i": "run_id"})
+            right = sub[["run_j", metric]].rename(columns={"run_j": "run_id"})
+            sub = (
+                pd.concat([left, right], ignore_index=True)
+                .groupby("run_id", as_index=False)[metric]
+                .mean()
+            )
+        sub["family"] = row["family"]
+        sub["selection"] = row["selection"]
+        sub["model"] = row["model"]
+        sub["value"] = sub[metric]
+        rows.append(sub[["family", "selection", "model", "value"]])
+    if not rows:
+        return pd.DataFrame(columns=["family", "selection", "model", "value"])
+    return pd.concat(rows, ignore_index=True)
+
+
+def _add_predictor_boxplot(ax, metric_df: pd.DataFrame, families: list[str], title: str) -> None:
+    x = np.arange(len(families))
+    positions = []
+    data_groups = []
+    colors = []
+    color_map = {
+        ("LSPIN", "nosmooth"): "#9ec1e6",
+        ("LSPIN", "smooth"): "#1f5a99",
+        ("L-LSPIN", "nosmooth"): "#9ec1e6",
+        ("L-LSPIN", "smooth"): "#1f5a99",
+        ("Concrete", "nosmooth"): "#a7d99b",
+        ("Concrete", "smooth"): "#2f7d32",
+        ("L-Concrete", "nosmooth"): "#a7d99b",
+        ("L-Concrete", "smooth"): "#2f7d32",
+    }
+    labels = {
+        "LSPIN": "LSPIN",
+        "L-LSPIN": "L-LSPIN",
+        "Concrete": "Concrete",
+        "L-Concrete": "L-Concrete",
+    }
+    for fam_idx, fam in enumerate(families):
+        for sel, offset in [("nosmooth", -0.18), ("smooth", 0.18)]:
+            sub = metric_df[(metric_df["family"] == fam) & (metric_df["selection"] == sel)]["value"].dropna()
+            if sub.empty:
+                continue
+            positions.append(fam_idx + offset)
+            data_groups.append(sub.to_numpy())
+            colors.append(color_map[(fam, sel)])
+    if data_groups:
+        boxplots._draw_colored_boxplots(ax, data_groups, positions, colors, width=0.30)
+    ax.set_title(title)
+    ax.set_xticks(x)
+    ax.set_xticklabels([labels[f] for f in families])
+    ax.grid(axis="y", alpha=0.22)
+
+
+def _annotate_predictor_significance(ax, metric_df: pd.DataFrame, families: list[str]) -> None:
+    y0, y1 = ax.get_ylim()
+    yr = y1 - y0
+    extra_top = 0.18 * yr if yr > 0 else 0.1
+    ax.set_ylim(y0, y1 + extra_top)
+    y0, y1 = ax.get_ylim()
+    yr = y1 - y0
+    top = y1 - 0.06 * yr
+    step = 0.10 * yr
+    for fam_idx, fam in enumerate(families):
+        no = metric_df[(metric_df["family"] == fam) & (metric_df["selection"] == "nosmooth")]["value"].dropna().to_numpy()
+        sm = metric_df[(metric_df["family"] == fam) & (metric_df["selection"] == "smooth")]["value"].dropna().to_numpy()
+        if len(no) < 2 or len(sm) < 2:
+            continue
+        p = float(ttest_ind(no, sm, equal_var=False, nan_policy="omit").pvalue)
+        if not np.isfinite(p):
+            label = "n/a"
+        elif p < 0.001:
+            label = "***"
+        elif p < 0.01:
+            label = "**"
+        elif p < 0.05:
+            label = "*"
+        else:
+            label = "ns"
+        x1, x2 = fam_idx - 0.18, fam_idx + 0.18
+        y = top - fam_idx * step
+        ax.plot([x1, x1, x2, x2], [y - 0.018 * yr, y, y, y - 0.018 * yr], color="#333333", lw=1.0, clip_on=False)
+        ax.text((x1 + x2) / 2.0, y + 0.010 * yr, label, ha="center", va="bottom", fontsize=10, clip_on=False)
+
+
+def _save_predictor_split_boxplots(results_dir: Path, dataset_label: str) -> None:
+    metric_specs = [
+        ("affinity_corr", "Affinity reproducibility", True),
+        ("test_cindex", "Test C-index", False),
+        ("cluster_ari", "Cluster stability (ARI)", True),
+        ("khard_over_union", "Khard / Union", False),
+    ]
+    predictor_specs = [
+        ("mlp", ["LSPIN", "Concrete"], "fig_selected_stability_metrics_with_cindex_boxplot_mlp_predictor.png"),
+        ("linear", ["L-LSPIN", "L-Concrete"], "fig_selected_stability_metrics_with_cindex_boxplot_linear_predictor.png"),
+    ]
+    for predictor_label, families, outname in predictor_specs:
+        fig, axes = plt.subplots(2, 2, figsize=(12.8, 8.2))
+        for ax, (metric, title, aggregate_pairs) in zip(axes.ravel(), metric_specs):
+            metric_df = _selected_metric_df(
+                results_dir,
+                metric,
+                families=families,
+                aggregate_pairs=aggregate_pairs,
+            )
+            _add_predictor_boxplot(ax, metric_df, families, title)
+            if not metric_df.empty:
+                _annotate_predictor_significance(ax, metric_df, families)
+            if metric == "test_cindex":
+                ymin, ymax = ax.get_ylim()
+                pad = (ymax - ymin) * 0.08 if np.isfinite(ymin) and np.isfinite(ymax) else 0.02
+                ax.set_ylim(max(0.5, ymin - pad), ymax + pad)
+                ax.axhline(0.5, ls="--", lw=1, color="gray", alpha=0.8)
+        if predictor_label == "mlp":
+            handles = [
+                Patch(facecolor="#9ec1e6", edgecolor="#444444", label="LSPIN: no smooth"),
+                Patch(facecolor="#1f5a99", edgecolor="#444444", label="LSPIN: patient smooth"),
+                Patch(facecolor="#a7d99b", edgecolor="#444444", label="Concrete: no smooth"),
+                Patch(facecolor="#2f7d32", edgecolor="#444444", label="Concrete: patient smooth"),
+            ]
+            fig.suptitle(f"{dataset_label}: selected MLP-predictor adaptive configs", y=0.985, fontsize=14)
+        else:
+            handles = [
+                Patch(facecolor="#9ec1e6", edgecolor="#444444", label="L-LSPIN: no smooth"),
+                Patch(facecolor="#1f5a99", edgecolor="#444444", label="L-LSPIN: patient smooth"),
+                Patch(facecolor="#a7d99b", edgecolor="#444444", label="L-Concrete: no smooth"),
+                Patch(facecolor="#2f7d32", edgecolor="#444444", label="L-Concrete: patient smooth"),
+            ]
+            fig.suptitle(f"{dataset_label}: selected linear-predictor adaptive configs", y=0.985, fontsize=14)
+        fig.legend(handles=handles, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.5, 0.83))
+        fig.text(
+            0.5,
+            0.915,
+            "Matched smooth vs no-smooth selections within each gate family, with Khard matching prioritized before performance.",
+            ha="center",
+            fontsize=10,
+        )
+        fig.tight_layout(rect=[0, 0, 1, 0.84])
+        fig.savefig(results_dir / outname, dpi=180, bbox_inches="tight")
+        plt.close(fig)
+
+
 def render(results_dir: Path, outdir: Path, dataset: str, args: argparse.Namespace) -> None:
     runs, aff, risk, cluster, selected_cfg = _write_notebook_style_files(results_dir)
     dataset_label = dataset.upper() if dataset != "pancan" else "PanCan"
     boxplots.save_selected_metric_boxplots(results_dir, dataset_label, "selected_stability")
     boxplots.save_selected_metric_boxplots(results_dir, dataset_label, "selected_stability_cindex")
+    _save_predictor_split_boxplots(results_dir, dataset_label)
     if not bool(getattr(args, "skip_heatmaps", False)):
         _save_heatmaps(
             dataset=dataset,
