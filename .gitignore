@@ -2,6 +2,11 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+
+# large data artifacts — not tracked in git
+data/runs/
+data/processed/
+
 figures/*.png
 figures/*.pdf
 figures/*.svg
