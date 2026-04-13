@@ -6,7 +6,7 @@ This folder covers the visible validation figure and its supporting summaries.
 
 The visible validation figure in the paper is:
 
-- `figures/fig_validation_cindex_all_models.png`
+- Fig. 2: all-model validation comparison
 
 The canonical preserved run also contains closely related validation outputs
 used for the same result family:
@@ -38,11 +38,11 @@ From the repository root:
 ```bash
 python analyses/plot_cindex_all_models.py \
   --run-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/repro_validation
+  --out-dir figures/validation
 
 python analyses/plot_validation_init_consistency.py \
   --run-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/repro_validation
+  --out-dir figures/validation
 ```
 
 Optional supplementary validation plots:
@@ -61,7 +61,7 @@ bash analyses/run_validate_goal1_gentle_all_kipan_brca.sh
 ```
 
 This is the clearest end-to-end entry point for validation. It creates a new
-timestamped run under `data/runs/` and then renders the main validation figures
+run under `data/runs/` and then renders the main validation figures
 from that new run.
 
 ## Driver and plotting scripts used here

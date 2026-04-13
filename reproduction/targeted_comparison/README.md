@@ -11,16 +11,19 @@ comparison layer.
 
 Main visible targeted-comparison figures:
 
-- `figures/diss_chap3_fig2_2.png`
-- `figures/disschap3_fig3_2.png`
+- Fig. 3: KIPAN targeted-comparison heatmaps
+- Fig. 4: targeted-comparison quantitative summary
 
 Visible supplementary targeted-comparison figures:
 
-- `figures/diss_chap3_suppfig1.png`
-- `figures/diss_chap3_suppfig_linear_brca_heatmap.png`
-- `figures/diss_chap3_suppfig2_2.png`
-- `figures/kipan_fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png`
-- `figures/PANCAN_fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png`
+- Fig. S1: BRCA nonlinear heatmaps
+- Fig. S2: BRCA linear heatmaps
+- Fig. S3: PANCAN heatmaps
+
+Nested selected-gene signal figures:
+
+- Fig. S4: KIPAN gated-vs-random selected-gene signal
+- Fig. S5: PANCAN gated-vs-random selected-gene signal
 
 ## Canonical preserved run root
 
@@ -71,7 +74,7 @@ data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset kipan \
   --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
-  --outdir data/processed/kipan_20260209_213604
+  --outdir data/processed/kipan_processed
 ```
 
 ### BRCA heatmaps and selected summaries
@@ -80,7 +83,7 @@ python analyses/render_adaptive_manuscript_figures.py \
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset brca \
   --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca \
-  --outdir data/processed/tcga_brca20260214_001423 \
+  --outdir data/processed/brca_processed \
   --knn-k 5
 ```
 
@@ -90,7 +93,7 @@ python analyses/render_adaptive_manuscript_figures.py \
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset pancan \
   --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan \
-  --outdir data/processed/tcga_pancan_xena_20260330_top5000 \
+  --outdir data/processed/pancan_processed \
   --knn-k 5
 ```
 
@@ -100,7 +103,7 @@ python analyses/render_adaptive_manuscript_figures.py \
 python analyses/plot_kipan_boxplots.py \
   --adaptive-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
   --validation-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/repro_kipan_boxplots
+  --out-dir figures/targeted_comparison
 ```
 
 ### KIPAN selected-gene signal outputs
@@ -109,7 +112,7 @@ python analyses/plot_kipan_boxplots.py \
 python analyses/quick_linear_gated_probe.py \
   --dataset kipan \
   --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
-  --outdir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan/linear_gated_probe_kipan_repro
+  --outdir data/runs/targeted_comparison_kipan_probe
 ```
 
 ### PANCAN selected-gene signal outputs
@@ -118,7 +121,7 @@ python analyses/quick_linear_gated_probe.py \
 python analyses/quick_linear_gated_probe.py \
   --dataset pancan \
   --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan \
-  --outdir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_repro
+  --outdir data/runs/targeted_comparison_pancan_probe
 ```
 
 ### PANCAN recurrent-gene summaries
@@ -127,7 +130,7 @@ python analyses/quick_linear_gated_probe.py \
 python analyses/plot_pancan_linear_probe_gene_recurrence.py \
   --dataset pancan \
   --probe-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep \
-  --outdir figures/repro_pancan_recurrence
+  --outdir figures/targeted_comparison
 ```
 
 ## If you want to launch a fresh targeted-comparison run with the same workflow defaults
@@ -138,8 +141,8 @@ Use the multi-dataset launcher:
 bash analyses/run_adaptive_gentle_all_kipan_brca_pancan.sh
 ```
 
-This creates a new timestamped run root under `data/runs/` with fresh
-`kipan/`, `brca/`, and `pancan/` subdirectories.
+This creates a new run root under `data/runs/` with fresh `kipan/`, `brca/`,
+and `pancan/` subdirectories.
 
 ## Driver and plotting scripts used here
 

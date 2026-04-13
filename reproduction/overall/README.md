@@ -4,34 +4,40 @@ This page is the shortest possible map of the visible paper outputs.
 
 ## Visible figure outputs in the paper
 
-The main figure files referenced from the paper source are:
+Main figures:
 
-- `figures/lspin_fig1.png`
-- `figures/fig_validation_cindex_all_models.png`
-- `figures/diss_chap3_fig2_2.png`
-- `figures/disschap3_fig3_2.png`
-- `figures/disschap3_fig4.png`
+- Fig. 1: framework overview
+- Fig. 2: all-model validation comparison
+- Fig. 3: KIPAN targeted-comparison heatmaps
+- Fig. 4: targeted-comparison quantitative summary
+- Fig. 5: broad sweep summary
 
-Supplementary visible figure files referenced from the paper source are:
+Supplementary figures:
 
-- `figures/diss_chap3_suppfig1.png`
-- `figures/diss_chap3_suppfig_linear_brca_heatmap.png`
-- `figures/diss_chap3_suppfig2_2.png`
-- `figures/kipan_fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png`
-- `figures/PANCAN_fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png`
+- Fig. S1: BRCA nonlinear heatmaps
+- Fig. S2: BRCA linear heatmaps
+- Fig. S3: PANCAN heatmaps
+- Fig. S4: KIPAN gated-vs-random selected-gene signal
+- Fig. S5: PANCAN gated-vs-random selected-gene signal
 
 ## Workflow split
 
 These visible outputs are supported by three workflow families:
 
 - validation:
-  `figures/fig_validation_cindex_all_models.png`
+  Fig. 2
 - targeted comparison:
-  `figures/diss_chap3_fig2_2.png`
-  `figures/disschap3_fig3_2.png`
-  supplementary heatmaps and gated-vs-random figures
+  Fig. 3
+  Fig. 4
+  supplementary heatmaps:
+  Fig. S1
+  Fig. S2
+  Fig. S3
+  nested selected-gene signal results:
+  Fig. S4
+  Fig. S5
 - broad sweep:
-  `figures/disschap3_fig4.png`
+  Fig. 5
 
 ## Where to go next
 

@@ -7,7 +7,7 @@ comparison figure.
 
 The visible broad-sweep figure in the paper is:
 
-- `figures/disschap3_fig4.png`
+- Fig. 5: broad sweep summary
 
 ## Canonical preserved runs
 
@@ -40,7 +40,7 @@ Focus on the postprocessed broad summaries and broad figure outputs there.
 ```bash
 python analyses/plot_feature_set_transport_size_sweep.py \
   --run-dir data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336 \
-  --out-prefix figures/repro_kipan_broad_transport
+  --out-prefix figures/broad_sweep/kipan_broad_transport
 ```
 
 ### KIPAN comparison boxplots reused in broad interpretation
@@ -49,7 +49,7 @@ python analyses/plot_feature_set_transport_size_sweep.py \
 python analyses/plot_kipan_boxplots.py \
   --adaptive-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
   --validation-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/repro_kipan_boxplots
+  --out-dir figures/broad_sweep
 ```
 
 ## If you want to launch a fresh broad sweep with the same workflow defaults
