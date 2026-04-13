@@ -12,10 +12,10 @@ The paper figure associated with this workflow is:
 ## Canonical preserved runs
 
 ```text
-data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336
-data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336
-data/runs/ch3_kipan_broad_gentle_20260409_161803
-data/runs/ch3_brca_broad_gentle_20260409_161803
+extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336
+extras/data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336
+extras/data/runs/ch3_kipan_broad_gentle_20260409_161803
+extras/data/runs/ch3_brca_broad_gentle_20260409_161803
 ```
 
 The strongest preserved references are the `v2` KIPAN and BRCA runs. The BRCA
@@ -27,8 +27,8 @@ treated as supplementary provenance rather than the only broad reference.
 Inspection should begin with:
 
 ```text
-data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336
-data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336
+extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336
+extras/data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336
 ```
 
 Focus on the postprocessed broad summaries and broad figure outputs there,
@@ -40,17 +40,17 @@ especially the merged broad summaries and any sweep-level comparison CSVs.
 
 ```bash
 python analyses/plot_feature_set_transport_size_sweep.py \
-  --run-dir data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336 \
-  --out-prefix figures/broad_sweep/kipan_broad_transport
+  --run-dir extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336 \
+  --out-prefix extras/figures/broad_sweep/kipan_broad_transport
 ```
 
 ### KIPAN comparison boxplots reused in broad interpretation
 
 ```bash
 python analyses/plot_kipan_boxplots.py \
-  --adaptive-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
-  --validation-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/broad_sweep
+  --adaptive-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
+  --validation-dir extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
+  --out-dir extras/figures/broad_sweep
 ```
 
 ## Rerun entry points

@@ -29,15 +29,15 @@ Nested selected-gene signal figures:
 ## Canonical preserved run root
 
 ```text
-data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020
 ```
 
 Per-dataset preserved subdirectories:
 
 ```text
-data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan
-data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca
-data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan
 ```
 
 ## Primary preserved outputs
@@ -72,9 +72,9 @@ Representative related CSV and supplementary-data outputs include:
 Inspection should begin in:
 
 ```text
-data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan
-data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca
-data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan
 ```
 
 ## Regeneration entry points
@@ -84,8 +84,8 @@ data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan
 ```bash
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset kipan \
-  --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
-  --outdir data/processed/kipan_processed
+  --results-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
+  --outdir extras/data/processed/kipan_processed
 ```
 
 ### BRCA heatmaps and selected summaries
@@ -93,8 +93,8 @@ python analyses/render_adaptive_manuscript_figures.py \
 ```bash
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset brca \
-  --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca \
-  --outdir data/processed/brca_processed \
+  --results-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca \
+  --outdir extras/data/processed/brca_processed \
   --knn-k 5
 ```
 
@@ -103,8 +103,8 @@ python analyses/render_adaptive_manuscript_figures.py \
 ```bash
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset pancan \
-  --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan \
-  --outdir data/processed/pancan_processed \
+  --results-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan \
+  --outdir extras/data/processed/pancan_processed \
   --knn-k 5
 ```
 
@@ -112,9 +112,9 @@ python analyses/render_adaptive_manuscript_figures.py \
 
 ```bash
 python analyses/plot_kipan_boxplots.py \
-  --adaptive-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
-  --validation-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/targeted_comparison
+  --adaptive-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
+  --validation-dir extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
+  --out-dir extras/figures/targeted_comparison
 ```
 
 ### KIPAN selected-gene signal outputs
@@ -122,8 +122,8 @@ python analyses/plot_kipan_boxplots.py \
 ```bash
 python analyses/quick_linear_gated_probe.py \
   --dataset kipan \
-  --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
-  --outdir data/runs/targeted_comparison_kipan_probe
+  --results-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan \
+  --outdir extras/data/runs/targeted_comparison_kipan_probe
 ```
 
 ### PANCAN selected-gene signal outputs
@@ -131,8 +131,8 @@ python analyses/quick_linear_gated_probe.py \
 ```bash
 python analyses/quick_linear_gated_probe.py \
   --dataset pancan \
-  --results-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan \
-  --outdir data/runs/targeted_comparison_pancan_probe
+  --results-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan \
+  --outdir extras/data/runs/targeted_comparison_pancan_probe
 ```
 
 ### PANCAN recurrent-gene summaries
@@ -140,8 +140,8 @@ python analyses/quick_linear_gated_probe.py \
 ```bash
 python analyses/plot_pancan_linear_probe_gene_recurrence.py \
   --dataset pancan \
-  --probe-dir data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep \
-  --outdir figures/targeted_comparison
+  --probe-dir extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep \
+  --outdir extras/figures/targeted_comparison
 ```
 
 ## Rerun entry point
@@ -152,7 +152,7 @@ Primary launcher:
 bash analyses/run_adaptive_gentle_all_kipan_brca_pancan.sh
 ```
 
-This creates a new run root under `data/runs/` with fresh `kipan/`, `brca/`,
+This creates a new run root under `extras/data/runs/` with fresh `kipan/`, `brca/`,
 and `pancan/` subdirectories.
 
 ## Primary scripts

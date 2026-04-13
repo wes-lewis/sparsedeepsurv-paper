@@ -21,7 +21,7 @@ Related preserved outputs from the same workflow include:
 ## Canonical preserved run
 
 ```text
-data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906
+extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906
 ```
 
 ## Primary preserved outputs
@@ -29,7 +29,7 @@ data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906
 Inspection should begin in:
 
 ```text
-data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906
+extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906
 ```
 
 ## Regeneration entry points
@@ -38,19 +38,19 @@ From the repository root:
 
 ```bash
 python analyses/plot_cindex_all_models.py \
-  --run-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/validation
+  --run-dir extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
+  --out-dir extras/figures/validation
 
 python analyses/plot_validation_init_consistency.py \
-  --run-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
-  --out-dir figures/validation
+  --run-dir extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906 \
+  --out-dir extras/figures/validation
 ```
 
 Related supplementary validation plots:
 
 ```bash
 python analyses/plot_validation_supp_boxplots.py \
-  --results-dir data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906
+  --results-dir extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906
 ```
 
 ## Rerun entry point
@@ -61,7 +61,7 @@ Primary launcher:
 bash analyses/run_validate_goal1_gentle_all_kipan_brca.sh
 ```
 
-This launcher creates a new run under `data/runs/` and then renders the main
+This launcher creates a new run under `extras/data/runs/` and then renders the main
 validation figures from that run.
 
 ## Primary scripts
