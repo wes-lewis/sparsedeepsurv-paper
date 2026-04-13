@@ -18,8 +18,8 @@ Core dependencies:
 
 ## Path aliases
 
-Short-name symlinks for canonical run and processed directories are not tracked
-in git (the data directories are gitignored). Create them once after cloning:
+Canonical short-name symlinks for the preserved run directories are included in
+the publication branch. Recreate them with:
 
 ```bash
 bash extras/setup_paths.sh
@@ -27,7 +27,8 @@ bash extras/setup_paths.sh
 
 This creates aliases such as `extras/data/runs/validation`,
 `extras/data/runs/adaptive`, and `extras/data/runs/broad/{kipan_v2,brca_v2,...}`
-that are used in the reproduction commands.
+that are used in the reproduction commands when the shortcuts are missing or
+need to be refreshed locally.
 
 ## Path resolution
 

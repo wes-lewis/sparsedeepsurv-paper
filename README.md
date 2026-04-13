@@ -28,8 +28,9 @@ All run outputs and analysis scripts are under [`extras/`](extras/).
 | Broad sweep (supplementary) | `extras/data/runs/broad/kipan_gentle`, `broad/brca_gentle` |
 
 Short names are symlinks to the timestamped originals in `extras/data/runs/`.
-Run `bash extras/setup_paths.sh` once after cloning to create them (data
-directories are gitignored and symlinks are not tracked).
+The publication branch preserves the canonical shortcuts and frozen run
+artifacts; run `bash extras/setup_paths.sh` only if those symlinks need to be
+recreated locally.
 
 ## Layout
 

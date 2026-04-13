@@ -1,0 +1,7 @@
+model,tumor_type,gene_symbol,ensembl_id,refit_recurrence,same_top_gated_tumor_across_refits,median_gate_rate,median_selected_patients,median_cox_signal_neglog10p,median_random_signal_neglog10p,median_gated_gene_advantage_neglog10p,fraction_refits_beating_random_median,top100_refit_overlap_vs_random_for_model,curated_tumor_gene_note
+L-LSPIN smooth,kidneyclearcellrenalcarcinoma,PBK,PBK,3/6,3/3,1.0,287.0,7.910144474836396,0.9595142507508396,6.49104070066851,1.0,2.3 vs 1.7; p=0.044,
+L-LSPIN smooth,kidneyclearcellrenalcarcinoma,NEK2,NEK2,2/6,2/2,1.0,287.0,9.936181878791842,0.9451436378116087,8.991038240980233,1.0,2.3 vs 1.7; p=0.044,
+LSPIN smooth,kidneyclearcellrenalcarcinoma,NEK2,NEK2,2/6,2/2,1.0,287.0,9.936181878791842,1.1553702019796326,8.78081167681221,1.0,1.9 vs 1.7; p=0.161,
+L-Concrete smooth,kidneypapillaryrenalcellcarcinoma,IGF2BP3,IGF2BP3,2/6,2/2,0.47735191881656647,137.0,7.008884951454119,0.49477243229516277,6.514112519158957,1.0,,
+L-Concrete smooth,kidneypapillaryrenalcellcarcinoma,KIF14,KIF14,2/6,2/2,0.1585365831851959,45.5,6.431941406652172,0.6326145764040224,5.799326830248148,1.0,,
+L-Concrete smooth,kidneypapillaryrenalcellcarcinoma,CCNB2,CCNB2,2/6,2/2,0.3240418136119842,93.0,5.723098230817182,0.5954323831888092,5.127665847628372,1.0,,

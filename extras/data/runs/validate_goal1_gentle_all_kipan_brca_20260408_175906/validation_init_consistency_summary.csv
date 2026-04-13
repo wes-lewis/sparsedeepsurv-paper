@@ -1,0 +1,489 @@
+dataset,variant_key,plot_label,metric,stage_key,stage_label,n_runs,n_blocks,mean_value,sd,ci95_half_width,relative_ci95_half_width,stage_order
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.8716508195909978,0.03612410548802079,,,0
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.8747656429364329,0.03978478266796784,,,1
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9042923768807536,0.026114430533397365,,,2
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9186255247926842,0.01794810347555811,,,0
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9343706399302683,0.028703252924148735,,,1
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.944429287058461,0.03689194449877755,,,2
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.8986293018391063,0.04346611120720546,,,0
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.8942496354954457,0.07394128642112836,,,1
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9479778688759808,0.022144395120589407,,,2
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9382449563724737,0.024912954804914643,,,0
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.8981645767622374,0.07018622133081241,,,1
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9655421638256431,0.01749154916256666,,,2
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.8596472181466659,0.04592308625832015,,,0
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.8721661346281121,0.038719776272818106,,,1
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9077460392236381,0.017058462260341935,,,2
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.8596472181466659,0.04592308625832015,,,0
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.8721661346281121,0.038719776272818106,,,1
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9077460392236381,0.017058462260341935,,,2
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9124478600509599,0.03722319524337411,,,0
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9102303555583457,0.04684231111492229,,,1
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9388902292540533,0.01757923484706232,,,2
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,,,,,0
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,,,,,1
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,,,,,2
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,266.08167419433596,37.948819281865404,33.263606715401465,0.1250127684145094,0
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,282.6074511210124,35.05668858776872,19.83518882118425,0.0701863618333645,1
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,282.6074511210124,,33.008167938203236,0.11425016601131344,2
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,430.34404296875,46.09374605071023,40.40294980674421,0.09388523082142007,0
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,430.88049570719403,51.313650163017996,29.033430740026308,0.0673816314019376,1
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,430.88049570719403,,51.437865075541566,0.12029306010818683,2
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,2118.5762451171877,112.8055648357319,98.87843719547891,0.04667211643827787,0
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,2032.4397074381511,182.6793458950366,103.36057013732646,0.05085541763382017,1
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,2032.4397074381511,,174.83506065116245,0.08749802593193874,2
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,1712.641796875,325.32389322124686,285.15896525945567,0.1665023975122969,0
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,1733.5913899739583,346.2253622901851,195.8954399961438,0.11299977672309881,1
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,1733.5913899739583,,97.40882263412757,0.054422280774798215,2
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Mean Khard,screen,"Screen
+vary split+init",5,0,284.4308685302734,60.243752835648564,52.80597761160071,0.18565487594388969,0
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,296.1390635172526,47.575128985201324,26.91816325581041,0.09089703646693068,1
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,296.1390635172526,,38.682998596097576,0.12872835211508699,2
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,284.4308685302734,60.243752835648564,52.80597761160071,0.18565487594388969,0
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,296.1390635172526,47.575128985201324,26.91816325581041,0.09089703646693068,1
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,296.1390635172526,,38.682998596097576,0.12872835211508699,2
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,448.96913452148436,49.07446882586935,43.015668515700554,0.09580985686587802,0
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,414.93408203125,54.339027740285424,30.745199247489207,0.07409658685297799,1
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,414.93408203125,,43.78066402587572,0.10670431752243198,2
+brca,goal1_linear_cox,Linear Cox,Mean Khard,screen,"Screen
+vary split+init",5,0,,,,,0
+brca,goal1_linear_cox,Linear Cox,Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,,,,,1
+brca,goal1_linear_cox,Linear Cox,Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,,,,,2
+brca,mlp,MLP,Mean Khard,screen,"Screen
+vary split+init",5,0,,,,,0
+brca,mlp,MLP,Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,,,,,1
+brca,mlp,MLP,Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,,,,,2
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,40.6,30.599019592137264,26.82122323832379,0.6606212620276795,0
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,46.916666666666664,21.827665236964073,12.3501642323354,0.2632361825719801,1
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,46.916666666666664,,21.169906979148585,0.4941799586159896,2
+brca,goal1_rsf,RSF,Mean Khard,screen,"Screen
+vary split+init",5,0,,,,,0
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.6088779688779689,0.048628155523941625,0.04262445765781043,0.07000492682689462,0
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6214441714441713,0.03815034986742499,0.0215855924703235,0.03473456420093351,1
+brca,goal1_nosmooth_concrete_lamx1p25,"Concrete
+No Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6214441714441713,,0.017119965248875817,0.027750175189526397,2
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.6377395577395577,0.02994511609246254,0.026248051549332692,0.04115794799113271,0
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6299617799617799,0.01981045950474467,0.011208822645277826,0.017792861411303193,1
+brca,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6299617799617799,,0.021042492745746266,0.03323186963709595,2
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.6712530712530713,0.008001097291937664,0.007013270996229942,0.010448028167882819,0
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6607152607152608,0.019898405424874657,0.01125858273392578,0.01703999196527978,1
+brca,goal1_smooth_lconcrete_lamx0p75,"L-Concrete
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6607152607152608,,0.013853707125810156,0.02089572565787996,2
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.6674856674856675,0.03002886355166296,0.026321459433924985,0.039433744747021354,0
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6710346710346711,0.028408937918968223,0.016073869795809517,0.023953858853559908,1
+brca,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6710346710346711,,0.021283073285824496,0.031693314978865836,2
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Test C-index,screen,"Screen
+vary split+init",5,0,0.5955773955773955,0.024816400549774652,0.021752534165774433,0.03652343814137869,0
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6123669123669123,0.0483204425847507,0.027339864122994318,0.044646213848035396,1
+brca,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6123669123669123,,0.0394183029434074,0.06547368021276291,2
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.5955773955773955,0.024816400549774652,0.021752534165774433,0.03652343814137869,0
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6123669123669123,0.0483204425847507,0.027339864122994318,0.044646213848035396,1
+brca,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6123669123669123,,0.0394183029434074,0.06547368021276291,2
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.6216216216216216,0.036767208115572686,0.032227878862206565,0.05184484860441926,0
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6153153153153152,0.03102229806324786,0.01755251749494302,0.028526053322674605,1
+brca,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6153153153153152,,0.029083308771484503,0.04753312576994646,2
+brca,goal1_linear_cox,Linear Cox,Test C-index,screen,"Screen
+vary split+init",5,0,0.6389189189189188,0.030784104425063654,0.026983457247390607,0.04223299146165197,0
+brca,goal1_linear_cox,Linear Cox,Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6539448539448539,0.05460024321809924,0.030892995817392865,0.04724098007811224,1
+brca,goal1_linear_cox,Linear Cox,Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6539448539448539,,0.05631048435689083,0.08652299908293837,2
+brca,mlp,MLP,Test C-index,screen,"Screen
+vary split+init",5,0,0.6525470925470926,0.018528760016189777,0.016241174238512332,0.024888892194918865,0
+brca,mlp,MLP,Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.6272317772317773,0.038944571299762636,0.02203496554892468,0.03513049936049753,1
+brca,mlp,MLP,Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.6272317772317773,,0.047061348522901135,0.07473875008462594,2
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.6151351351351352,0.048782530998250626,0.042759773727218994,0.06951281317693772,0
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.5965328965328965,0.04973343531941406,0.028139340024000776,0.047171480713887166,1
+brca,goal1_nosmooth_stg_lamx1p0,"MLP+STG
+No Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.5965328965328965,,0.02480536775001778,0.0411613021189383,2
+brca,goal1_rsf,RSF,Test C-index,screen,"Screen
+vary split+init",5,0,0.6149058149058149,0.016502815696285856,0.014465355745081912,0.02352450634622405,0
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9877796530475461,0.005768942112747432,,,0
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9876036021515318,0.0050137541403231685,,,1
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9888067602983881,0.004830308772458316,,,2
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9890320174095846,0.007850207546052439,,,0
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9918982627232301,0.008672438863262237,,,1
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9928605865924323,0.009336893648207155,,,2
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9899189592171032,0.0032718343248483075,,,0
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9880957459763909,0.007099584091351088,,,1
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9913466132141341,0.006803607706567117,,,2
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9892806354617057,0.007572871914401079,,,0
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9876588734277169,0.009726721671619826,,,1
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9940443847787227,0.0052023793266683565,,,2
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9933759350207165,0.0035103052895667968,,,0
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9920536694136424,0.004657890905236947,,,1
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9959124809764909,0.0021517874045458314,,,2
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9933759350207165,0.0035103052895667968,,,0
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9920536694136424,0.004657890905236947,,,1
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9959124809764909,0.0021517874045458314,,,2
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,0.9931714250266305,0.004400178751733357,,,0
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,0.9961009227032409,0.002621113208213222,,,1
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,0.9962666039842502,0.0034158388833378565,,,2
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Affinity Corr,screen,"Screen
+vary split+init",10,0,,,,,0
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Affinity Corr,fixed_init_pooled,"Fixed-init eval
+pooled blocks",66,4,,,,,1
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Affinity Corr,fixed_init_within_block,"Fixed-init eval
+within block",12,4,,,,,2
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,245.0393859863281,42.25685874865657,37.03976980162029,0.1511584337861788,0
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,239.33236821492514,34.43583412537965,19.483907340016096,0.08140941187912855,1
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,239.33236821492514,,22.580901935763528,0.09187768719136949,2
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,186.5861022949219,53.79436678636837,47.15284148882362,0.25271357785422227,0
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,182.97747802734375,20.108217834338976,11.377295279987658,0.062178664842497504,1
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,182.97747802734375,,22.506249262999404,0.1217156757390584,2
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,190.79150390625,25.203068234893248,22.09146333539648,0.1157885067369229,0
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,197.40443738301596,60.57883334498489,34.2757016241421,0.17363187007614386,1
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,197.40443738301596,,21.98165437052769,0.0967052666763627,2
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,1860.3830078125,40.543075083269635,35.53757218600299,0.019102288097002804,0
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,1841.7618916829426,57.62377662349433,32.60372088639137,0.01770246253526244,1
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,1841.7618916829426,,67.33424468456535,0.03663934143913384,2
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Mean Khard,screen,"Screen
+vary split+init",5,0,228.63089294433593,43.01733493206499,37.70635656663765,0.16492240432187746,0
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,241.32175064086914,26.018523226159182,14.721365360768745,0.0610030605267605,1
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,241.32175064086914,,13.357755662079528,0.054816811359910025,2
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,228.63089294433593,43.01733493206499,37.70635656663765,0.16492240432187746,0
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,241.32175064086914,26.018523226159182,14.721365360768745,0.0610030605267605,1
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,241.32175064086914,,13.357755662079528,0.054816811359910025,2
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,985.94208984375,46.06482458382146,40.37759902328307,0.040953317075328455,0
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,1024.2657623291016,53.246148980016585,30.126844877985025,0.029413113262205404,1
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,1024.2657623291016,,23.922229756008257,0.023745855849808893,2
+kipan,goal1_linear_cox,Linear Cox,Mean Khard,screen,"Screen
+vary split+init",5,0,,,,,0
+kipan,goal1_linear_cox,Linear Cox,Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,,,,,1
+kipan,goal1_linear_cox,Linear Cox,Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,,,,,2
+kipan,mlp,MLP,Mean Khard,screen,"Screen
+vary split+init",5,0,,,,,0
+kipan,mlp,MLP,Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,,,,,1
+kipan,mlp,MLP,Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,,,,,2
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Mean Khard,screen,"Screen
+vary split+init",5,0,79.2,31.491268631161876,27.603314003938003,0.34852669196891417,0
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Mean Khard,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,88.33333333333333,25.356847141742545,14.346986872623546,0.1624187193127194,1
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Mean Khard,fixed_init_within_block,"Fixed-init eval
+within block",3,4,88.33333333333333,,21.858526940973935,0.24504913927963165,2
+kipan,goal1_rsf,RSF,Mean Khard,screen,"Screen
+vary split+init",5,0,,,,,0
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.7286557501904037,0.005927183537299089,0.005195405439371222,0.007130123433478182,0
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7217885250063468,0.009725875710710031,0.005502932220489614,0.007624022867974003,1
+kipan,goal1_nosmooth_concrete_lamx1p0,"Concrete
+No Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7217885250063468,,0.009153136167459792,0.012699773599961942,2
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.7265803503427266,0.011023080859468187,0.009662156384313086,0.01329812508658604,0
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7241844376745367,0.00390693213204547,0.0022105549517792097,0.0030524750833884648,1
+kipan,goal1_smooth_concrete_lamx1p0,"Concrete
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7241844376745367,,0.0038086179819757098,0.005262057928437317,2
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.7276846915460777,0.013356378773149125,0.0117073821810387,0.016088537132977983,0
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7201383599898451,0.0075420403457744575,0.0042673110433944636,0.0059256821750956834,1
+kipan,goal1_smooth_lconcrete_lamx1p25,"L-Concrete
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7201383599898451,,0.0059276649746599925,0.008225860091793897,2
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.7283891850723534,0.010621085590693908,0.009309791995248954,0.01278134297713959,0
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7255093297791317,0.008286201658761268,0.0046883599430804345,0.006462163545860563,1
+kipan,goal1_smooth_llspin_lamx0p75,"L-LSPIN
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7255093297791317,,0.009868340456125496,0.01359767284326403,2
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Test C-index,screen,"Screen
+vary split+init",5,0,0.7206968773800456,0.015047220366832474,0.01318947018416144,0.01830099532567591,0
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7220899974612847,0.015390331645151129,0.008707899875880708,0.012059299957755733,1
+kipan,goal1_lspin_alt_nosmooth,"LSPIN
+Alt Sigma",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7220899974612847,,0.010816508478044542,0.014953309153081355,2
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.7206968773800457,0.015047220366832474,0.01318947018416144,0.018300995325675907,0
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7220899974612847,0.015390331645151129,0.008707899875880708,0.012059299957755733,1
+kipan,goal1_nosmooth_lspin_lamx1p0,"LSPIN
+No Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7220899974612847,,0.010816508478044542,0.014953309153081355,2
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.7118050266565117,0.010499730138901011,0.0092034192517065,0.012929691287706652,0
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7202414953033766,0.010506563559546248,0.005944647953374701,0.008253687120416084,1
+kipan,goal1_smooth_lspin_lamx1p0,"LSPIN
+Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7202414953033766,,0.005894328829808879,0.008208357236426801,2
+kipan,goal1_linear_cox,Linear Cox,Test C-index,screen,"Screen
+vary split+init",5,0,0.7284082254379284,0.0163071032835413,0.014293806251578481,0.01962334547085168,0
+kipan,goal1_linear_cox,Linear Cox,Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7220265295760346,0.017974238651367765,0.01016988289336884,0.01408519282434189,1
+kipan,goal1_linear_cox,Linear Cox,Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7220265295760346,,0.0059134779973769236,0.008208629169417418,2
+kipan,mlp,MLP,Test C-index,screen,"Screen
+vary split+init",5,0,0.7259139375476009,0.010418186183897716,0.009131942823702211,0.01257992490756302,0
+kipan,mlp,MLP,Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.7352437166793603,0.007353042181662715,0.004160375265286729,0.0056584982243392205,1
+kipan,mlp,MLP,Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.7352437166793603,,0.003388788537397015,0.00461801076602396,2
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Test C-index,screen,"Screen
+vary split+init",5,0,0.7205635948210206,0.010813142465001358,0.009478137268036008,0.01315378314441526,0
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Test C-index,fixed_init_pooled,"Fixed-init eval
+pooled blocks",12,4,0.719392612338157,0.013293065134055712,0.007521259638832249,0.010455013729410961,1
+kipan,goal1_nosmooth_stg_lamx1p25,"MLP+STG
+No Smooth",Test C-index,fixed_init_within_block,"Fixed-init eval
+within block",3,4,0.719392612338157,,0.015069682966600134,0.020909752732509227,2
+kipan,goal1_rsf,RSF,Test C-index,screen,"Screen
+vary split+init",5,0,0.7270753998476771,0.0017929817998268475,0.0015716178412384385,0.002161561017698706,0

@@ -1,0 +1,103 @@
+dataset,experiment,variant_key,variant_label,model_family,model_kind,gate_type,gate_sigma,lambda_sparse,lambda_sample_smooth,selection,sigma_match,lambda_base,lambda_multiplier,goal0_target_reference,goal1_group,goal1_target_reference,predictor
+kipan,goal1,mlp,MLP,MLP,mlp,,,,,reference,na,,,False,dense,False,
+kipan,goal1,goal1_rsf,RSF,RSF,rsf,,,,,reference,na,,,False,dense,False,
+kipan,goal1,goal1_nosmooth_stg_lamx0p5,MLP+STG nosmooth x0.5,MLP+STG,stg,global_stg,0.22,0.0005,0.0,goal1_nosmooth_sweep,na,0.001,0.5,False,nosmooth,False,
+kipan,goal1,goal1_nosmooth_stg_lamx0p75,MLP+STG nosmooth x0.75,MLP+STG,stg,global_stg,0.22,0.00075,0.0,goal1_nosmooth_sweep,na,0.001,0.75,False,nosmooth,False,
+kipan,goal1,goal1_nosmooth_stg_lamx1p0,MLP+STG nosmooth x1,MLP+STG,stg,global_stg,0.22,0.001,0.0,goal1_nosmooth_sweep,na,0.001,1.0,False,nosmooth,False,
+kipan,goal1,goal1_nosmooth_stg_lamx1p25,MLP+STG nosmooth x1.2,MLP+STG,stg,global_stg,0.22,0.00125,0.0,goal1_nosmooth_sweep,na,0.001,1.25,False,nosmooth,False,
+kipan,goal1,goal1_nosmooth_stg_lamx1p5,MLP+STG nosmooth x1.5,MLP+STG,stg,global_stg,0.22,0.0015,0.0,goal1_nosmooth_sweep,na,0.001,1.5,False,nosmooth,False,
+kipan,goal1,goal1_nosmooth_stg_lamx2p0,MLP+STG nosmooth x2,MLP+STG,stg,global_stg,0.22,0.002,0.0,goal1_nosmooth_sweep,na,0.001,2.0,False,nosmooth,False,
+kipan,goal1,goal1_nosmooth_stg_lamx3p0,MLP+STG nosmooth x3,MLP+STG,stg,global_stg,0.22,0.003,0.0,goal1_nosmooth_sweep,na,0.001,3.0,False,nosmooth,False,
+kipan,goal1,goal1_linear_cox,Linear Cox,LinearCox,linear_cox,,,,,reference,na,,,False,dense,False,
+kipan,goal1,goal1_nosmooth_lspin_lamx1p0,LSPIN nosmooth x1,LSPIN,gated,lspin_tf,0.22,0.007,0.0,goal1_nosmooth_sweep,exact,0.007,1.0,False,nosmooth,True,mlp
+kipan,goal1,goal1_nosmooth_lspin_lamx1p25,LSPIN nosmooth x1.2,LSPIN,gated,lspin_tf,0.22,0.00875,0.0,goal1_nosmooth_sweep,exact,0.007,1.25,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_lspin_lamx1p5,LSPIN nosmooth x1.5,LSPIN,gated,lspin_tf,0.22,0.0105,0.0,goal1_nosmooth_sweep,exact,0.007,1.5,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_lspin_lamx2p0,LSPIN nosmooth x2,LSPIN,gated,lspin_tf,0.22,0.014,0.0,goal1_nosmooth_sweep,exact,0.007,2.0,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_lspin_lamx2p5,LSPIN nosmooth x2.5,LSPIN,gated,lspin_tf,0.22,0.0175,0.0,goal1_nosmooth_sweep,exact,0.007,2.5,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_lspin_lamx3p0,LSPIN nosmooth x3,LSPIN,gated,lspin_tf,0.22,0.021,0.0,goal1_nosmooth_sweep,exact,0.007,3.0,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_concrete_lamx1p0,Concrete nosmooth x1,Concrete,gated,concrete,0.15,0.002,0.0,goal1_nosmooth_sweep,exact,0.002,1.0,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_concrete_lamx1p25,Concrete nosmooth x1.2,Concrete,gated,concrete,0.15,0.0025,0.0,goal1_nosmooth_sweep,exact,0.002,1.25,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_concrete_lamx1p5,Concrete nosmooth x1.5,Concrete,gated,concrete,0.15,0.003,0.0,goal1_nosmooth_sweep,exact,0.002,1.5,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_concrete_lamx2p0,Concrete nosmooth x2,Concrete,gated,concrete,0.15,0.004,0.0,goal1_nosmooth_sweep,exact,0.002,2.0,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_concrete_lamx2p5,Concrete nosmooth x2.5,Concrete,gated,concrete,0.15,0.005,0.0,goal1_nosmooth_sweep,exact,0.002,2.5,False,nosmooth,False,mlp
+kipan,goal1,goal1_nosmooth_concrete_lamx3p0,Concrete nosmooth x3,Concrete,gated,concrete,0.15,0.006,0.0,goal1_nosmooth_sweep,exact,0.002,3.0,False,nosmooth,False,mlp
+kipan,goal1,goal1_smooth_lspin_lamx1p0,LSPIN smooth x1,LSPIN,gated,lspin_tf,0.22,0.007,0.1,goal1_smooth_sweep,exact,0.007,1.0,False,smooth,True,mlp
+kipan,goal1,goal1_smooth_lspin_lamx1p25,LSPIN smooth x1.2,LSPIN,gated,lspin_tf,0.22,0.00875,0.1,goal1_smooth_sweep,exact,0.007,1.25,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_lspin_lamx1p5,LSPIN smooth x1.5,LSPIN,gated,lspin_tf,0.22,0.0105,0.1,goal1_smooth_sweep,exact,0.007,1.5,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_lspin_lamx2p0,LSPIN smooth x2,LSPIN,gated,lspin_tf,0.22,0.014,0.1,goal1_smooth_sweep,exact,0.007,2.0,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_lspin_lamx2p5,LSPIN smooth x2.5,LSPIN,gated,lspin_tf,0.22,0.0175,0.1,goal1_smooth_sweep,exact,0.007,2.5,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_lspin_lamx3p0,LSPIN smooth x3,LSPIN,gated,lspin_tf,0.22,0.021,0.1,goal1_smooth_sweep,exact,0.007,3.0,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_concrete_lamx1p0,Concrete smooth x1,Concrete,gated,concrete,0.15,0.002,0.025,goal1_smooth_sweep,exact,0.002,1.0,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_concrete_lamx1p25,Concrete smooth x1.2,Concrete,gated,concrete,0.15,0.0025,0.025,goal1_smooth_sweep,exact,0.002,1.25,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_concrete_lamx1p5,Concrete smooth x1.5,Concrete,gated,concrete,0.15,0.003,0.025,goal1_smooth_sweep,exact,0.002,1.5,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_concrete_lamx2p0,Concrete smooth x2,Concrete,gated,concrete,0.15,0.004,0.025,goal1_smooth_sweep,exact,0.002,2.0,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_concrete_lamx2p5,Concrete smooth x2.5,Concrete,gated,concrete,0.15,0.005,0.025,goal1_smooth_sweep,exact,0.002,2.5,False,smooth,False,mlp
+kipan,goal1,goal1_smooth_concrete_lamx3p0,Concrete smooth x3,Concrete,gated,concrete,0.15,0.006,0.025,goal1_smooth_sweep,exact,0.002,3.0,False,smooth,False,mlp
+kipan,goal1,goal1_lspin_alt_nosmooth,LSPIN sigma=0.22,LSPIN,gated,lspin_tf,0.22,0.007,0.0,nosmooth,exact,0.007,1.0,False,alt_sigma,False,mlp
+kipan,goal1,goal1_smooth_llspin_lamx0p75,L-LSPIN smooth x0.75,L-LSPIN,gated,lspin_tf,0.22,0.00525,0.1,goal1_smooth_sweep,exact,0.007,0.75,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_llspin,L-LSPIN smooth,L-LSPIN,gated,lspin_tf,0.22,0.007,0.1,goal1_smooth_sweep,exact,0.007,1.0,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_llspin_lamx1p25,L-LSPIN smooth x1.2,L-LSPIN,gated,lspin_tf,0.22,0.00875,0.1,goal1_smooth_sweep,exact,0.007,1.25,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_llspin_lamx1p5,L-LSPIN smooth x1.5,L-LSPIN,gated,lspin_tf,0.22,0.0105,0.1,goal1_smooth_sweep,exact,0.007,1.5,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_llspin_lamx2p0,L-LSPIN smooth x2,L-LSPIN,gated,lspin_tf,0.22,0.014,0.1,goal1_smooth_sweep,exact,0.007,2.0,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_llspin_lamx3p0,L-LSPIN smooth x3,L-LSPIN,gated,lspin_tf,0.22,0.021,0.1,goal1_smooth_sweep,exact,0.007,3.0,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_lconcrete_lamx0p75,L-Concrete smooth x0.75,L-Concrete,gated,concrete,0.15,0.0015,0.025,goal1_smooth_sweep,exact,0.002,0.75,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_lconcrete,L-Concrete smooth,L-Concrete,gated,concrete,0.15,0.002,0.025,goal1_smooth_sweep,exact,0.002,1.0,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_lconcrete_lamx1p25,L-Concrete smooth x1.2,L-Concrete,gated,concrete,0.15,0.0025,0.025,goal1_smooth_sweep,exact,0.002,1.25,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_lconcrete_lamx1p5,L-Concrete smooth x1.5,L-Concrete,gated,concrete,0.15,0.003,0.025,goal1_smooth_sweep,exact,0.002,1.5,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_lconcrete_lamx2p0,L-Concrete smooth x2,L-Concrete,gated,concrete,0.15,0.004,0.025,goal1_smooth_sweep,exact,0.002,2.0,False,linear_gated,False,linear
+kipan,goal1,goal1_smooth_lconcrete_lamx3p0,L-Concrete smooth x3,L-Concrete,gated,concrete,0.15,0.006,0.025,goal1_smooth_sweep,exact,0.002,3.0,False,linear_gated,False,linear
+kipan,goal1,goal1_floor_lspin,LSPIN floor (λ=0),LSPIN,gated,lspin_tf,0.22,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,mlp
+kipan,goal1,goal1_floor_concrete,Concrete floor (λ=0),Concrete,gated,concrete,0.15,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,mlp
+kipan,goal1,goal1_floor_llspin,L-LSPIN floor (λ=0),L-LSPIN,gated,lspin_tf,0.22,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,linear
+kipan,goal1,goal1_floor_lconcrete,L-Concrete floor (λ=0),L-Concrete,gated,concrete,0.15,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,linear
+brca,goal1,mlp,MLP,MLP,mlp,,,,,reference,na,,,False,dense,False,
+brca,goal1,goal1_rsf,RSF,RSF,rsf,,,,,reference,na,,,False,dense,False,
+brca,goal1,goal1_nosmooth_stg_lamx0p5,MLP+STG nosmooth x0.5,MLP+STG,stg,global_stg,0.1,0.0005,0.0,goal1_nosmooth_sweep,na,0.001,0.5,False,nosmooth,False,
+brca,goal1,goal1_nosmooth_stg_lamx0p75,MLP+STG nosmooth x0.75,MLP+STG,stg,global_stg,0.1,0.00075,0.0,goal1_nosmooth_sweep,na,0.001,0.75,False,nosmooth,False,
+brca,goal1,goal1_nosmooth_stg_lamx1p0,MLP+STG nosmooth x1,MLP+STG,stg,global_stg,0.1,0.001,0.0,goal1_nosmooth_sweep,na,0.001,1.0,False,nosmooth,False,
+brca,goal1,goal1_nosmooth_stg_lamx1p25,MLP+STG nosmooth x1.2,MLP+STG,stg,global_stg,0.1,0.00125,0.0,goal1_nosmooth_sweep,na,0.001,1.25,False,nosmooth,False,
+brca,goal1,goal1_nosmooth_stg_lamx1p5,MLP+STG nosmooth x1.5,MLP+STG,stg,global_stg,0.1,0.0015,0.0,goal1_nosmooth_sweep,na,0.001,1.5,False,nosmooth,False,
+brca,goal1,goal1_nosmooth_stg_lamx2p0,MLP+STG nosmooth x2,MLP+STG,stg,global_stg,0.1,0.002,0.0,goal1_nosmooth_sweep,na,0.001,2.0,False,nosmooth,False,
+brca,goal1,goal1_nosmooth_stg_lamx3p0,MLP+STG nosmooth x3,MLP+STG,stg,global_stg,0.1,0.003,0.0,goal1_nosmooth_sweep,na,0.001,3.0,False,nosmooth,False,
+brca,goal1,goal1_linear_cox,Linear Cox,LinearCox,linear_cox,,,,,reference,na,,,False,dense,False,
+brca,goal1,goal1_nosmooth_lspin_lamx1p0,LSPIN nosmooth x1,LSPIN,gated,lspin_tf,0.1,0.007,0.0,goal1_nosmooth_sweep,exact,0.007,1.0,False,nosmooth,True,mlp
+brca,goal1,goal1_nosmooth_lspin_lamx1p25,LSPIN nosmooth x1.2,LSPIN,gated,lspin_tf,0.1,0.00875,0.0,goal1_nosmooth_sweep,exact,0.007,1.25,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_lspin_lamx1p5,LSPIN nosmooth x1.5,LSPIN,gated,lspin_tf,0.1,0.0105,0.0,goal1_nosmooth_sweep,exact,0.007,1.5,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_lspin_lamx2p0,LSPIN nosmooth x2,LSPIN,gated,lspin_tf,0.1,0.014,0.0,goal1_nosmooth_sweep,exact,0.007,2.0,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_lspin_lamx2p5,LSPIN nosmooth x2.5,LSPIN,gated,lspin_tf,0.1,0.0175,0.0,goal1_nosmooth_sweep,exact,0.007,2.5,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_lspin_lamx3p0,LSPIN nosmooth x3,LSPIN,gated,lspin_tf,0.1,0.021,0.0,goal1_nosmooth_sweep,exact,0.007,3.0,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_concrete_lamx1p0,Concrete nosmooth x1,Concrete,gated,concrete,0.1,0.0022,0.0,goal1_nosmooth_sweep,exact,0.0022,1.0,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_concrete_lamx1p25,Concrete nosmooth x1.2,Concrete,gated,concrete,0.1,0.0027500000000000003,0.0,goal1_nosmooth_sweep,exact,0.0022,1.25,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_concrete_lamx1p5,Concrete nosmooth x1.5,Concrete,gated,concrete,0.1,0.0033,0.0,goal1_nosmooth_sweep,exact,0.0022,1.5,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_concrete_lamx2p0,Concrete nosmooth x2,Concrete,gated,concrete,0.1,0.0044,0.0,goal1_nosmooth_sweep,exact,0.0022,2.0,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_concrete_lamx2p5,Concrete nosmooth x2.5,Concrete,gated,concrete,0.1,0.0055000000000000005,0.0,goal1_nosmooth_sweep,exact,0.0022,2.5,False,nosmooth,False,mlp
+brca,goal1,goal1_nosmooth_concrete_lamx3p0,Concrete nosmooth x3,Concrete,gated,concrete,0.1,0.0066,0.0,goal1_nosmooth_sweep,exact,0.0022,3.0,False,nosmooth,False,mlp
+brca,goal1,goal1_smooth_lspin_lamx1p0,LSPIN smooth x1,LSPIN,gated,lspin_tf,0.15,0.007,0.2,goal1_smooth_sweep,exact,0.007,1.0,False,smooth,True,mlp
+brca,goal1,goal1_smooth_lspin_lamx1p25,LSPIN smooth x1.2,LSPIN,gated,lspin_tf,0.15,0.00875,0.2,goal1_smooth_sweep,exact,0.007,1.25,False,smooth,False,mlp
+brca,goal1,goal1_smooth_lspin_lamx1p5,LSPIN smooth x1.5,LSPIN,gated,lspin_tf,0.15,0.0105,0.2,goal1_smooth_sweep,exact,0.007,1.5,False,smooth,False,mlp
+brca,goal1,goal1_smooth_lspin_lamx2p0,LSPIN smooth x2,LSPIN,gated,lspin_tf,0.15,0.014,0.2,goal1_smooth_sweep,exact,0.007,2.0,False,smooth,False,mlp
+brca,goal1,goal1_smooth_lspin_lamx2p5,LSPIN smooth x2.5,LSPIN,gated,lspin_tf,0.15,0.0175,0.2,goal1_smooth_sweep,exact,0.007,2.5,False,smooth,False,mlp
+brca,goal1,goal1_smooth_lspin_lamx3p0,LSPIN smooth x3,LSPIN,gated,lspin_tf,0.15,0.021,0.2,goal1_smooth_sweep,exact,0.007,3.0,False,smooth,False,mlp
+brca,goal1,goal1_smooth_concrete_lamx1p0,Concrete smooth x1,Concrete,gated,concrete,0.15,0.0022,0.2,goal1_smooth_sweep,exact,0.0022,1.0,False,smooth,False,mlp
+brca,goal1,goal1_smooth_concrete_lamx1p25,Concrete smooth x1.2,Concrete,gated,concrete,0.15,0.0027500000000000003,0.2,goal1_smooth_sweep,exact,0.0022,1.25,False,smooth,False,mlp
+brca,goal1,goal1_smooth_concrete_lamx1p5,Concrete smooth x1.5,Concrete,gated,concrete,0.15,0.0033,0.2,goal1_smooth_sweep,exact,0.0022,1.5,False,smooth,False,mlp
+brca,goal1,goal1_smooth_concrete_lamx2p0,Concrete smooth x2,Concrete,gated,concrete,0.15,0.0044,0.2,goal1_smooth_sweep,exact,0.0022,2.0,False,smooth,False,mlp
+brca,goal1,goal1_smooth_concrete_lamx2p5,Concrete smooth x2.5,Concrete,gated,concrete,0.15,0.0055000000000000005,0.2,goal1_smooth_sweep,exact,0.0022,2.5,False,smooth,False,mlp
+brca,goal1,goal1_smooth_concrete_lamx3p0,Concrete smooth x3,Concrete,gated,concrete,0.15,0.0066,0.2,goal1_smooth_sweep,exact,0.0022,3.0,False,smooth,False,mlp
+brca,goal1,goal1_lspin_alt_nosmooth,LSPIN sigma=0.10,LSPIN,gated,lspin_tf,0.1,0.007,0.0,nosmooth,nearest,0.007,1.0,False,alt_sigma,False,mlp
+brca,goal1,goal1_smooth_llspin_lamx0p75,L-LSPIN smooth x0.75,L-LSPIN,gated,lspin_tf,0.15,0.00525,0.2,goal1_smooth_sweep,exact,0.007,0.75,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_llspin,L-LSPIN smooth,L-LSPIN,gated,lspin_tf,0.15,0.007,0.2,goal1_smooth_sweep,exact,0.007,1.0,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_llspin_lamx1p25,L-LSPIN smooth x1.2,L-LSPIN,gated,lspin_tf,0.15,0.00875,0.2,goal1_smooth_sweep,exact,0.007,1.25,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_llspin_lamx1p5,L-LSPIN smooth x1.5,L-LSPIN,gated,lspin_tf,0.15,0.0105,0.2,goal1_smooth_sweep,exact,0.007,1.5,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_llspin_lamx2p0,L-LSPIN smooth x2,L-LSPIN,gated,lspin_tf,0.15,0.014,0.2,goal1_smooth_sweep,exact,0.007,2.0,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_llspin_lamx3p0,L-LSPIN smooth x3,L-LSPIN,gated,lspin_tf,0.15,0.021,0.2,goal1_smooth_sweep,exact,0.007,3.0,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_lconcrete_lamx0p75,L-Concrete smooth x0.75,L-Concrete,gated,concrete,0.15,0.00165,0.2,goal1_smooth_sweep,exact,0.0022,0.75,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_lconcrete,L-Concrete smooth,L-Concrete,gated,concrete,0.15,0.0022,0.2,goal1_smooth_sweep,exact,0.0022,1.0,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_lconcrete_lamx1p25,L-Concrete smooth x1.2,L-Concrete,gated,concrete,0.15,0.0027500000000000003,0.2,goal1_smooth_sweep,exact,0.0022,1.25,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_lconcrete_lamx1p5,L-Concrete smooth x1.5,L-Concrete,gated,concrete,0.15,0.0033,0.2,goal1_smooth_sweep,exact,0.0022,1.5,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_lconcrete_lamx2p0,L-Concrete smooth x2,L-Concrete,gated,concrete,0.15,0.0044,0.2,goal1_smooth_sweep,exact,0.0022,2.0,False,linear_gated,False,linear
+brca,goal1,goal1_smooth_lconcrete_lamx3p0,L-Concrete smooth x3,L-Concrete,gated,concrete,0.15,0.0066,0.2,goal1_smooth_sweep,exact,0.0022,3.0,False,linear_gated,False,linear
+brca,goal1,goal1_floor_lspin,LSPIN floor (λ=0),LSPIN,gated,lspin_tf,0.1,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,mlp
+brca,goal1,goal1_floor_concrete,Concrete floor (λ=0),Concrete,gated,concrete,0.1,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,mlp
+brca,goal1,goal1_floor_llspin,L-LSPIN floor (λ=0),L-LSPIN,gated,lspin_tf,0.15,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,linear
+brca,goal1,goal1_floor_lconcrete,L-Concrete floor (λ=0),L-Concrete,gated,concrete,0.15,0.0,0.0,floor,exact,0.0,0.0,False,floor,False,linear

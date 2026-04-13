@@ -1,0 +1,9 @@
+family,selection,model,lambda_sparse,lambda_sample_smooth,gate_sigma,representative_seed,test_cindex,best_val_cindex
+Concrete,nosmooth,Concrete (no smooth),0.0022,0.0,0.12,1160124,0.5585585585585585,0.8141447368421053
+Concrete,smooth,Concrete + patient smooth,0.0022,0.1,0.12,1170123,0.5428337428337429,0.8388157894736842
+L-Concrete,nosmooth,L-Concrete (no smooth),0.0033,0.0,0.12,1480123,0.6114660114660114,0.8634868421052632
+L-Concrete,smooth,L-Concrete + patient smooth,0.0066,0.1,0.12,1410124,0.5911547911547912,0.7944078947368421
+L-LSPIN,nosmooth,L-LSPIN (no smooth),0.007,0.0,0.15,560123,0.551023751023751,0.787828947368421
+L-LSPIN,smooth,L-LSPIN + patient smooth,0.021,0.4,0.15,430123,0.5767403767403767,0.7532894736842105
+LSPIN,nosmooth,LSPIN (no smooth),0.00525,0.0,0.12,360123,0.6402948402948403,0.8536184210526315
+LSPIN,smooth,LSPIN + patient smooth,0.0105,0.2,0.12,260124,0.6106470106470107,0.787828947368421

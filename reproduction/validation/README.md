@@ -41,6 +41,20 @@ python analyses/plot_validation_supp_boxplots.py \
   --results-dir data/runs/validation
 ```
 
+Post hoc matched validation-replicate comparison:
+
+```bash
+cd extras
+python analyses/posthoc_paired_validation_differences.py \
+  --run-dir data/runs/validation \
+  --dataset brca
+```
+
+This produces matched run-level C-index comparisons on the intersection of
+saved `fixed_init_eval` replicates. It is intended as a post hoc comparison of
+paired validation runs and should not be described as a patient-level paired
+bootstrap or a formal per-patient concordance test.
+
 ## Rerun
 
 ```bash
@@ -55,4 +69,5 @@ bash analyses/run_validate_goal1_gentle_all_kipan_brca.sh
 - `extras/analyses/plot_cindex_all_models.py`
 - `extras/analyses/plot_validation_init_consistency.py`
 - `extras/analyses/plot_validation_supp_boxplots.py`
+- `extras/analyses/posthoc_paired_validation_differences.py`
 - `extras/analyses/run_validate_goal1_gentle_all_kipan_brca.sh`

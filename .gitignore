@@ -3,9 +3,51 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
-# large data artifacts — not tracked in git
-extras/data/runs/
+# large data artifacts — not tracked in git by default
+extras/data/runs/*
 extras/data/processed/
+
+# keep canonical frozen run shortcuts
+!extras/data/runs/adaptive
+!extras/data/runs/validation
+!extras/data/runs/broad
+
+# keep canonical frozen timestamped run roots and their figure/summary artifacts
+!extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/
+extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/**
+!extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/**/
+!extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/**/*.png
+!extras/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/**/*.csv
+
+!extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906/
+extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906/**
+!extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906/**/
+!extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906/**/*.png
+!extras/data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906/**/*.csv
+
+!extras/data/runs/ch3_kipan_broad_gentle_20260409_161803/
+extras/data/runs/ch3_kipan_broad_gentle_20260409_161803/**
+!extras/data/runs/ch3_kipan_broad_gentle_20260409_161803/**/
+!extras/data/runs/ch3_kipan_broad_gentle_20260409_161803/**/*.png
+!extras/data/runs/ch3_kipan_broad_gentle_20260409_161803/**/*.csv
+
+!extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/
+extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/**
+!extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/**/
+!extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/**/*.png
+!extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/**/*.csv
+
+!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/
+extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**
+!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**/
+!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**/*.png
+!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**/*.csv
+
+# keep worker partials, checkpoints, and legacy duplicate labels out of the
+# publication branch even inside preserved run trees
+extras/data/runs/**/_partial*/**
+extras/data/runs/**/state_dicts/**
+extras/data/runs/**/old_labels/**
 
 extras/figures/*.png
 extras/figures/*.pdf
