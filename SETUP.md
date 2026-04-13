@@ -7,7 +7,7 @@ Requires a Python environment with the dependencies listed in the sibling
 [`pyproject.toml`](../sparsedeepsurv/pyproject.toml) and
 [`requirements.txt`](../sparsedeepsurv/requirements.txt).
 
-Core dependencies used by the analysis scripts:
+Core dependencies:
 
 - `torch`
 - `numpy`
@@ -16,18 +16,34 @@ Core dependencies used by the analysis scripts:
 - `scikit-learn`
 - `sksurv`
 
+## Path aliases
+
+Short-name symlinks for canonical run and processed directories are not tracked
+in git (the data directories are gitignored). Create them once after cloning:
+
+```bash
+bash extras/setup_paths.sh
+```
+
+This creates aliases such as `extras/data/runs/validation`,
+`extras/data/runs/adaptive`, and `extras/data/runs/broad/{kipan_v2,brca_v2,...}`
+that are used in the reproduction commands.
+
 ## Path resolution
 
-Analysis scripts resolve project paths relative to the repository root via
-[`analyses/_paths.py`](analyses/_paths.py). The sibling `sparsedeepsurv`
-checkout is required; by default scripts expect it in the sibling location.
-Set `SPARSEDEEPSURV_SRC` to point to `sparsedeepsurv/src` to override.
+Analysis scripts resolve project paths relative to `extras/` via
+[`extras/analyses/_paths.py`](extras/analyses/_paths.py). The natural working
+directory for running scripts is `extras/` (the repo's analysis root).
+
+The sibling `sparsedeepsurv` checkout is required; by default scripts resolve
+it from the expected sibling layout. Set `SPARSEDEEPSURV_SRC` to point to
+`sparsedeepsurv/src` to override.
 
 ## Optional environment variables
 
 - `SPARSEDEEPSURV_SRC` — path to `sparsedeepsurv/src`
-- `LSPIN_PYTORCH_ROOT` — path to a local `lspin-pytorch` checkout, for legacy reference scripts
-- `KIPAN_SOURCE_DIR`, `BRCA_SOURCE_DIR`, `PANCAN_SOURCE_DIR` — source directories for `analyses/ensure_project_data_artifacts.py`
+- `LSPIN_PYTORCH_ROOT` — path to a local `lspin-pytorch` checkout (legacy reference scripts only)
+- `KIPAN_SOURCE_DIR`, `BRCA_SOURCE_DIR`, `PANCAN_SOURCE_DIR` — source directories for `extras/analyses/ensure_project_data_artifacts.py`
 
 If unset, scripts attempt the expected sibling layout and fail with a clear
 message if the dependency is missing.
@@ -36,11 +52,12 @@ message if the dependency is missing.
 
 Not part of the canonical publication surface:
 
-- `analyses/ch3_kipan_mlp_reference.py`
-- `analyses/ch3_kipan_mlp_overlay_figure.py`
-- `analyses/mlp_baseline.py`
-- `analyses/ensure_project_data_artifacts.py`
+- `extras/analyses/ch3_kipan_mlp_reference.py`
+- `extras/analyses/ch3_kipan_mlp_overlay_figure.py`
+- `extras/analyses/mlp_baseline.py`
+- `extras/analyses/ensure_project_data_artifacts.py`
 
-Placeholder wrappers (`analyses/ch3_brca_targeted.py`,
-`analyses/ch3_brca_broad.py`) document intended migration points but are not
-fully implemented. Older exploratory material is under [`archive/`](archive/).
+Placeholder wrappers (`extras/analyses/ch3_brca_targeted.py`,
+`extras/analyses/ch3_brca_broad.py`) document intended migration points but are
+not fully implemented. Older exploratory material is under
+[`extras/archive/`](extras/archive/).

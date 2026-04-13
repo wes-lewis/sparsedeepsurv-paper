@@ -1,52 +1,48 @@
 # `sparsedeepsurv-paper`
 
-Publication archive for the paper analyses. This repository preserves the canonical runs, processed artifacts, figures, and analysis entry points used in the manuscript.
+Analysis code and preserved run archive for the sparse deep survival models
+paper (Chapter 3). Accompanies the
+[`sparsedeepsurv`](https://github.com/wes-lewis/sparsedeepsurv) package.
 
-## Quick Start
+## Reproduction
 
-This repository supports three primary workflows for reproducing paper results:
+[`reproduction/README.md`](reproduction/README.md) is the primary guide.
+Per-workflow detail:
 
-1. **Validation and Model Comparison** — All-model C-index validation and initialization consistency
-2. **Targeted Comparison** — Per-dataset configuration and metric summaries
-3. **Broad Sparsity Sweeps** — Sparsity-versus-performance analysis across model families
+- [`reproduction/validation/README.md`](reproduction/validation/README.md) — Fig. 2
+- [`reproduction/targeted_comparison/README.md`](reproduction/targeted_comparison/README.md) — Figs. 3–4, S1–S5
+- [`reproduction/broad_sweep/README.md`](reproduction/broad_sweep/README.md) — Fig. 5
 
-For detailed instructions on each workflow, see the [reproduction guide](reproduction/README.md).
+For the figure-by-figure provenance mapping, see
+[`PUBLICATION_MANIFEST.md`](PUBLICATION_MANIFEST.md).
+
+## Canonical preserved runs
+
+All run outputs and analysis scripts are under [`extras/`](extras/).
+
+| Workflow | Path |
+|---|---|
+| Validation | `extras/data/runs/validation` |
+| Targeted comparison | `extras/data/runs/adaptive` |
+| Broad sweep (primary) | `extras/data/runs/broad/kipan_v2`, `broad/brca_v2` |
+| Broad sweep (supplementary) | `extras/data/runs/broad/kipan_gentle`, `broad/brca_gentle` |
+
+Short names are symlinks to the timestamped originals in `extras/data/runs/`.
+Run `bash extras/setup_paths.sh` once after cloning to create them (data
+directories are gitignored and symlinks are not tracked).
+
+## Layout
+
+- `extras/analyses/` — analysis drivers, figure renderers, validation utilities
+- `extras/data/runs/` — canonical run outputs
+- `extras/data/processed/` — processed split artifacts and derived outputs
+- `extras/figures/` — generated manuscript and appendix figures
+- `extras/tables/` — generated summary tables
+- `extras/archive/` — noncanonical recovery notes, older scripts, project history
+- `reproduction/` — workflow guides for reproducing paper results
+- `overall/` — figure and workflow index
 
 ## Setup
 
-This repository requires:
-
-- The sibling [`sparsedeepsurv`](../sparsedeepsurv) repository (for source imports)
-- Python environment with: `torch`, `numpy`, `pandas`, `matplotlib`, `scikit-learn`, `sksurv`
-
-Environment setup and path configuration are documented in [SETUP.md](SETUP.md).
-
-## Reproduction Workflows
-
-Each workflow includes:
-
-- **Preserved run outputs**: Canonical models and predictions from the paper
-- **Data artifacts**: Processed splits and supplementary CSVs referenced in the manuscript
-- **Figure regeneration**: Scripts to rerender publication figures from preserved outputs
-- **Rerun capability**: Ability to launch new runs with identical parameterization
-
-For comprehensive details on each workflow, canonical run locations, and regeneration commands:
-
-- [Validation workflow](reproduction/README.md#validation-and-model-comparison)
-- [Targeted comparison workflow](reproduction/README.md#targeted-comparison)
-- [Broad sweep workflow](reproduction/README.md#broad-sparsity-sweeps)
-
-## Repository Organization
-
-- `analyses/`: Analysis scripts, figure renderers, and validation utilities
-- `reproduction/`: Workflow guides and primary documentation for running paper analyses
-- `overall/`, `validation/`, `targeted_comparison/`, `broad_sweep/`: Detailed workflow documentation
-- `extras/`: Reference data, figures, tables, and archived materials
-
-For the complete figure-by-figure mapping, see [PUBLICATION_MANIFEST.md](PUBLICATION_MANIFEST.md).
-
-## Repository Scope
-
-This archive preserves the canonical outputs and scripts used for the paper. Results across different environments will be approximately similar rather than byte-for-byte identical. This is a curated reproduction package, not a raw-data end-to-end pipeline.
-
-For additional context, see [PUBLICATION_MANIFEST.md](PUBLICATION_MANIFEST.md) for detailed run provenance and scope documentation.
+See [`SETUP.md`](SETUP.md) for environment requirements, path conventions, and
+optional override variables.
