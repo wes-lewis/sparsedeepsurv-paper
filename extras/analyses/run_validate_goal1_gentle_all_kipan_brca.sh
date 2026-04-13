@@ -11,7 +11,7 @@
 #        - fig_cindex_all_models_pointest.png
 set -euo pipefail
 
-PYTHON=/home/wes/.conda/envs/musevo/bin/python
+PYTHON="${PYTHON:-python}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAPER_ROOT="$(dirname "$SCRIPT_DIR")"
 

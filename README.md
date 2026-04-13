@@ -1,7 +1,7 @@
 # `sparsedeepsurv-paper`
 
 Analysis code and preserved run archive for the sparse deep survival models
-paper (Chapter 3). Accompanies the
+paper. Accompanies the
 [`sparsedeepsurv`](https://github.com/wes-lewis/sparsedeepsurv) package.
 
 ## Reproduction

@@ -50,6 +50,13 @@ Probe subdirectories (selected-gene signal and recurrence):
 
 ## Regeneration
 
+### BRCA processed input
+
+```bash
+cd extras
+python analyses/prepare_tcga_brca_firehose.py
+```
+
 ### Heatmaps and selected summaries
 
 ```bash
@@ -63,7 +70,7 @@ python analyses/render_adaptive_manuscript_figures.py \
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset brca \
   --results-dir data/runs/adaptive/brca \
-  --outdir data/processed/brca_processed \
+  --outdir data/processed/tcga_brca20260214_001423 \
   --knn-k 5
 
 python analyses/render_adaptive_manuscript_figures.py \
@@ -113,6 +120,7 @@ bash analyses/run_adaptive_gentle_all_kipan_brca_pancan.sh
 
 ## Scripts
 
+- `extras/analyses/prepare_tcga_brca_firehose.py`
 - `extras/analyses/ch3_kipan_adaptive_v2.py`
 - `extras/analyses/ch3_brca_adaptive_v2.py`
 - `extras/analyses/ch3_pancan_adaptive_v2.py`

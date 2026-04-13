@@ -20,6 +20,14 @@ are supplementary provenance.
 
 ## Regeneration
 
+BRCA broad reruns use the canonical processed input artifact at
+`extras/data/processed/tcga_brca20260214_001423`, which can be rebuilt with:
+
+```bash
+cd extras
+python analyses/prepare_tcga_brca_firehose.py
+```
+
 ### KIPAN transport-size sweep
 
 ```bash
@@ -57,6 +65,7 @@ python analyses/ch3_broad_gentle.py --help
 
 ## Scripts
 
+- `extras/analyses/prepare_tcga_brca_firehose.py`
 - `extras/analyses/ch3_kipan_broad.py`
 - `extras/analyses/ch3_brca_broad_v2.py`
 - `extras/analyses/ch3_broad_gentle.py`

@@ -223,8 +223,8 @@ This is the first-pass proposed restructuring, without executing it yet.
 ### Future top-level structure
 
 - `README.md`
-- `CHAPTER3_PUBLICATION_MANIFEST.md`
-- `CHAPTER3_PRUNING_PLAN.md`
+- `PUBLICATION_MANIFEST.md`
+- `PRUNING_PLAN.md`
 - `analyses/`
   only canonical scripts
 - `archive/`

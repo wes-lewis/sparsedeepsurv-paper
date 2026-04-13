@@ -13,6 +13,14 @@ Key outputs:
 
 ## Regeneration
 
+BRCA-dependent reruns use the canonical processed input artifact at
+`extras/data/processed/tcga_brca20260214_001423`, which can be rebuilt with:
+
+```bash
+cd extras
+python analyses/prepare_tcga_brca_firehose.py
+```
+
 ```bash
 cd extras
 
@@ -42,6 +50,7 @@ bash analyses/run_validate_goal1_gentle_all_kipan_brca.sh
 
 ## Scripts
 
+- `extras/analyses/prepare_tcga_brca_firehose.py`
 - `extras/analyses/validate_models.py`
 - `extras/analyses/plot_cindex_all_models.py`
 - `extras/analyses/plot_validation_init_consistency.py`

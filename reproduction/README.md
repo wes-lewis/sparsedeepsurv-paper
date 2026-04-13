@@ -4,6 +4,22 @@ Three workflows cover the primary paper analyses. All commands run from
 `extras/` (the analysis root of this repository). Short-name paths for
 canonical run directories are symlinks in `extras/data/runs/`.
 
+## Processed Inputs
+
+The BRCA analyses use the processed dataset artifact
+`extras/data/processed/tcga_brca20260214_001423`. That artifact can be rebuilt
+from the raw TCGA Firehose BRCA RNA, CNV, and clinical files with:
+
+```bash
+cd extras
+python analyses/prepare_tcga_brca_firehose.py
+```
+
+This writes the canonical `splits_and_core.npz`, `X_scaled.npz`, and
+`models/scaler.joblib` files expected by the BRCA validation, targeted, and
+broad-sweep drivers, together with an `artifact_manifest.json` documenting the
+preprocessing path.
+
 ---
 
 ## Validation — Fig. 2
@@ -70,7 +86,7 @@ python analyses/render_adaptive_manuscript_figures.py \
 python analyses/render_adaptive_manuscript_figures.py \
   --dataset brca \
   --results-dir data/runs/adaptive/brca \
-  --outdir data/processed/brca_processed \
+  --outdir data/processed/tcga_brca20260214_001423 \
   --knn-k 5
 
 python analyses/render_adaptive_manuscript_figures.py \

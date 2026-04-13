@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNS="$ROOT/data/runs"
 STAMP="$(date +%Y%m%d_%H%M%S)"
-PYTHON="/home/wes/.conda/envs/musevo/bin/python"
+PYTHON="${PYTHON:-python}"
 GPUS=("${@}")
 
 if [ ${#GPUS[@]} -eq 0 ]; then
