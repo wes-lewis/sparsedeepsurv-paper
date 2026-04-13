@@ -8,9 +8,9 @@ workstation-specific paths.
 The archive is not intended to be a from-scratch raw-data reproduction package.
 Instead, it is a curated companion to the [`sparsedeepsurv`](../sparsedeepsurv)
 codebase and the preserved processed artifacts under [`data/processed`](data/processed)
-and [`data/runs`](data/runs). If you run the canonical scripts in this repo with
-the packaged processed artifacts, you should obtain approximately similar
-results and regenerated figures/tables from the preserved analysis outputs.
+and [`data/runs`](data/runs). Running the canonical scripts in this repo with
+the packaged processed artifacts should yield approximately similar results and
+regenerated figures/tables from the preserved analysis outputs.
 
 ## Minimal setup
 
@@ -27,8 +27,8 @@ used by the analysis scripts, including at minimum:
 It also assumes access to the sibling [`sparsedeepsurv`](../sparsedeepsurv)
 repository, because the paper analyses import the package directly from its
 source tree. By default the scripts look for that checkout in the expected
-sibling location. If your layout differs, set `SPARSEDEEPSURV_SRC` to point to
-`sparsedeepsurv/src`.
+sibling location. Alternative layouts can be handled by setting
+`SPARSEDEEPSURV_SRC` to point to `sparsedeepsurv/src`.
 
 For environment setup, use the sibling `sparsedeepsurv` repository's package
 metadata and dependency lists, especially
@@ -41,22 +41,21 @@ The goal of the `polish` branch is to preserve the canonical processed
 artifacts, run outputs, and figure-generation entry points used for the paper,
 not to serve as a raw-data end-to-end reproduction package.
 
-For literal result-by-result commands, see
-[`reproduction/README.md`](reproduction/README.md).
+For result-oriented regeneration and rerun instructions, see:
 
-## What a user should take away
+- [`overall/README.md`](overall/README.md)
+- [`validation/README.md`](validation/README.md)
+- [`targeted_comparison/README.md`](targeted_comparison/README.md)
+- [`broad_sweep/README.md`](broad_sweep/README.md)
 
-This archive is meant to support three concrete use cases:
+## Archive scope
+
+This archive supports three main use cases:
 
 - inspect the exact preserved runs that underlie the paper figures and tables
 - rerender the paper figures and summary outputs from those preserved runs
 - launch a new run with the same model families, grids, and dataset-specific
   defaults as the preserved workflows
-
-In other words, a user should come away thinking: "I can see which frozen run
-directories matter, I can regenerate the manuscript-facing outputs from them,
-and I can start a fresh run with the same parameterization if I want to check
-stability or reproduce the workflow approximately."
 
 The preserved materials are strongest for provenance and rerendering. They are
 also sufficient to instantiate another identically parameterized run for the
@@ -90,22 +89,22 @@ The main preserved run directories are:
 For the figure-by-figure mapping used to curate this archive, see
 [`PUBLICATION_MANIFEST.md`](PUBLICATION_MANIFEST.md).
 
-## Reproduction structure
+## Documentation structure
 
-The reproduction docs are organized into four folders:
+The top-level workflow guides are organized around the paper result families
+rather than around individual scripts.
 
-- [`reproduction/overall/README.md`](reproduction/overall/README.md)
-- [`reproduction/validation/README.md`](reproduction/validation/README.md)
-- [`reproduction/targeted_comparison/README.md`](reproduction/targeted_comparison/README.md)
-- [`reproduction/broad_sweep/README.md`](reproduction/broad_sweep/README.md)
+- [`overall/README.md`](overall/README.md)
+- [`validation/README.md`](validation/README.md)
+- [`targeted_comparison/README.md`](targeted_comparison/README.md)
+- [`broad_sweep/README.md`](broad_sweep/README.md)
 
-This structure is intentionally result-first rather than script-first. The goal
-is to tell a user:
+Each guide records:
 
-- which visible outputs belong to each workflow family
-- which preserved run directory to inspect
-- which command to run to rerender that result family
-- which launcher or driver to use for a fresh rerun
+- the paper figures and related supplementary data associated with that workflow
+- the canonical preserved run directories
+- the primary PNG, CSV, or supplementary-data outputs worth inspecting
+- the commands that regenerate or rerun that workflow
 
 ## Optional and legacy helpers
 

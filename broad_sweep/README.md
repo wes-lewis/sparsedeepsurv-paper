@@ -1,11 +1,11 @@
 # Broad Sweep
 
-This folder covers the broad sparsity/smoothing sweeps and the visible broad
-comparison figure.
+This folder covers the broad sparsity/smoothing sweeps and the associated broad
+comparison outputs.
 
-## Visible output
+## Figure correspondence
 
-The visible broad-sweep figure in the paper is:
+The paper figure associated with this workflow is:
 
 - Fig. 5: broad sweep summary
 
@@ -22,18 +22,19 @@ The strongest preserved references are the `v2` KIPAN and BRCA runs. The BRCA
 gentle broad run appears less complete at the top level, so it should be
 treated as supplementary provenance rather than the only broad reference.
 
-## If you only want to inspect the preserved results
+## Primary preserved outputs
 
-Start with:
+Inspection should begin with:
 
 ```text
 data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336
 data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336
 ```
 
-Focus on the postprocessed broad summaries and broad figure outputs there.
+Focus on the postprocessed broad summaries and broad figure outputs there,
+especially the merged broad summaries and any sweep-level comparison CSVs.
 
-## If you want to rerender the visible broad-sweep outputs
+## Regeneration entry points
 
 ### KIPAN transport-size sweep plot
 
@@ -52,15 +53,15 @@ python analyses/plot_kipan_boxplots.py \
   --out-dir figures/broad_sweep
 ```
 
-## If you want to launch a fresh broad sweep with the same workflow defaults
+## Rerun entry points
 
-Use the launcher:
+Primary launcher:
 
 ```bash
 bash analyses/run_ch3_broad_gentle_kipan_brca.sh
 ```
 
-Or inspect the direct drivers:
+Direct drivers:
 
 ```bash
 python analyses/ch3_kipan_broad.py --help
@@ -68,7 +69,7 @@ python analyses/ch3_brca_broad_v2.py --help
 python analyses/ch3_broad_gentle.py --help
 ```
 
-## Driver and plotting scripts used here
+## Primary scripts
 
 - `analyses/ch3_kipan_broad.py`
 - `analyses/ch3_brca_broad_v2.py`

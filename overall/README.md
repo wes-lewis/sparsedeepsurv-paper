@@ -1,8 +1,9 @@
 # Overall
 
-This page is the shortest possible map of the visible paper outputs.
+This page provides a compact map of the paper result families represented in
+this archive.
 
-## Visible figure outputs in the paper
+## Figure correspondence
 
 Main figures:
 
@@ -20,9 +21,9 @@ Supplementary figures:
 - Fig. S4: KIPAN gated-vs-random selected-gene signal
 - Fig. S5: PANCAN gated-vs-random selected-gene signal
 
-## Workflow split
+## Workflow correspondence
 
-These visible outputs are supported by three workflow families:
+These figure outputs are supported by three workflow families:
 
 - validation:
   Fig. 2
@@ -39,17 +40,28 @@ These visible outputs are supported by three workflow families:
 - broad sweep:
   Fig. 5
 
+Related supplementary data and tabular outputs are organized with the same
+workflow split:
+
+- validation:
+  validation summaries and initialization-consistency CSVs
+- targeted comparison:
+  selected configuration CSVs, heatmap summaries, and selected-gene signal or
+  recurrence CSVs
+- broad sweep:
+  broad summary CSVs and sweep-level comparison summaries
+
 ## Where to go next
 
-- For validation outputs and commands: [`../validation/README.md`](../validation/README.md)
-- For targeted-comparison outputs and commands: [`../targeted_comparison/README.md`](../targeted_comparison/README.md)
-- For broad-sweep outputs and commands: [`../broad_sweep/README.md`](../broad_sweep/README.md)
+- Validation outputs and commands: [`../validation/README.md`](../validation/README.md)
+- Targeted-comparison outputs and commands: [`../targeted_comparison/README.md`](../targeted_comparison/README.md)
+- Broad-sweep outputs and commands: [`../broad_sweep/README.md`](../broad_sweep/README.md)
 
 ## Important scope note
 
 This archive is meant to preserve:
 
-- the canonical frozen runs behind the visible outputs
+- the canonical frozen runs behind the paper outputs
 - the scripts that regenerate those output families
 - the drivers that launch another run with the same parameterization
 
