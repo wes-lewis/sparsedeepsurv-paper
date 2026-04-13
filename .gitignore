@@ -4,12 +4,12 @@ __pycache__/
 .pytest_cache/
 
 # large data artifacts — not tracked in git
-data/runs/
-data/processed/
+extras/data/runs/
+extras/data/processed/
 
-figures/*.png
-figures/*.pdf
-figures/*.svg
-tables/*.csv
+extras/figures/*.png
+extras/figures/*.pdf
+extras/figures/*.svg
+extras/tables/*.csv
 # keep frozen data CSVs
-!data/*.csv
+!extras/data/*.csv
