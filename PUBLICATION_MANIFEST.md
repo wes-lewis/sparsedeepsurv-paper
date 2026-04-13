@@ -1,77 +1,96 @@
 # Publication Manifest
 
-This document records the current publication-oriented keep set for the paper
-companion repo. The governing principle is:
+This document records the canonical preserved runs in this repository and the
+main entry points that regenerate or rerun the corresponding result families.
 
-- Preserve the exact frozen artifacts that support the main figures,
-  appendix figures, appendix tables, and related supplementary data in the
-  manuscript source tree.
-- Avoid rerunning analyses or regenerating results.
-- Treat this repo as a curated archival companion rather than a full
-  from-scratch recomputation pipeline.
+The intent is simple:
+
+- preserve the frozen run outputs that support the paper results
+- preserve the scripts that regenerate figures and summaries from those runs
+- preserve the workflow drivers needed to launch another run with the same
+  parameterization
+
+This is an archival provenance document, not a manuscript-assembly log.
+
+## Branch context
 
 The local archival snapshot branch for the paper repo is:
 
 - `archive-local-20260413` at commit `d732c27`
 
-The working cleanup branch is:
+The publication-facing cleanup branch is:
 
 - `polish`
 
+## Canonical workflows
 
-## Canonical Run Directories
+The repository centers on three workflow families:
 
-These are the run directories currently considered canonical for the paper.
+- validation and all-model comparison
+- adaptive gated analyses
+- broad sweeps
 
-### Validation / all-model comparison
+For each workflow family, the preserved materials are intended to support three
+user actions:
+
+- inspect the exact frozen outputs retained in the archive
+- regenerate the paper-facing figures and summaries from those outputs
+- launch another run with the same workflow defaults
+
+Users should expect approximately similar rerun results rather than byte-for-
+byte identical outputs across environments.
+
+## 1. Validation and all-model comparison
+
+Canonical preserved run:
 
 - `data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906`
 
-Primary use:
+This run is the canonical source for the validation comparison outputs,
+including the all-model C-index summaries and initialization-consistency
+results.
 
-- Main text Figure 3.2 (`fig:ch3-cindex-all-models`)
-- Validation summary tables and supporting CSVs
-
-Key files observed in this run:
+Representative preserved outputs include:
 
 - `fig_validation_cindex_ci_all_models.png`
 - `fig_cindex_all_models_pointest.png`
+- `validation_init_consistency_summary.csv`
 - `summary.csv`
 - `screen_summary.csv`
-- `goal0_fixed_init_summary.csv`
-- `goal1_fixed_init_summary.csv`
-- `goal0_matched_summary.csv`
-- `goal1_matched_summary.csv`
-- `runs.csv`
 - `affinity_summary.csv`
-- `affinity_pairs.csv`
-- `histology.csv`
-- `split_block_summary.csv`
-- `within_between_split_summary.csv`
-- `validation_init_consistency_summary.csv`
 
-### Adaptive gentle run for KIPAN, BRCA, and PANCAN
+Main regeneration entry points:
+
+- `analyses/plot_cindex_all_models.py`
+- `analyses/plot_validation_init_consistency.py`
+- `analyses/plot_validation_supp_boxplots.py`
+
+Main rerun entry points:
+
+- `analyses/validate_models.py`
+- `analyses/run_validate_goal1_gentle_all_kipan_brca.sh`
+
+## 2. Adaptive gated analyses
+
+Canonical preserved run root:
 
 - `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020`
 
-Primary use:
+Canonical per-dataset subdirectories:
 
-- Main text Figure 3.3 (`fig:ch3-kipan-heatmaps`)
-- Main text Figure 3.4 (`fig:ch3-paper-style-quant`)
-- Appendix B BRCA heatmaps
-- Appendix B BRCA linear heatmaps
-- Appendix B PANCAN heatmaps
-- Appendix B KIPAN and PANCAN gated-vs-random signal figures
-- Appendix B recurrent-gene supplementary data/table support
-- Appendix B selected-config tables and targeted-comparison support
+- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan`
+- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca`
+- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan`
 
-Per-dataset subdirectories:
+These adaptive runs are the canonical source for:
 
-- `kipan/`
-- `brca/`
-- `pancan/`
+- selected gate heatmaps
+- selected configuration summaries
+- selected stability/c-index comparison boxplots
+- per-dataset notebook-style summary CSVs
+- derived probe-style analyses for KIPAN and PANCAN
 
-Important frozen files in each dataset subdirectory:
+Representative preserved outputs in each dataset subdirectory include:
 
 - `selected_showcase_configs.csv`
 - `selected_comparison_configs.csv`
@@ -83,366 +102,96 @@ Important frozen files in each dataset subdirectory:
 - `notebook_style_models_affinity_summary.csv`
 - `notebook_style_models_risk_summary.csv`
 - `notebook_style_models_cluster_summary.csv`
-- `fig_selected_stability_metrics_with_cindex_boxplot.png`
-- `fig_selected_stability_metrics_with_cindex_boxplot_mlp_predictor.png`
-- `fig_selected_stability_metrics_with_cindex_boxplot_linear_predictor.png`
-- heatmap PNGs for LSPIN / Concrete / L-LSPIN / L-Concrete smooth vs no smooth
+- `fig_selected_stability_metrics_with_cindex_boxplot*.png`
+- `fig_gate_heatmap_*.png`
 
-Nested canonical probe-analysis outputs:
-
-- `kipan/linear_gated_probe_kipan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
-- `pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
-
-These nested outputs contain the appendix signal and recurrence artifacts:
-
-- `fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png`
-- `gated_patient_subset_signal_probe_patient_subset_predictivity_summary.csv`
-- `gated_patient_subset_signal_probe_patient_subset_predictivity_aggregate_significance.csv`
-- `*_recurrent_gene_supplement_table.csv`
-- recurrent-gene candidate and recurrence summary CSVs
-
-### Broad sweeps
-
-Keep all four broad runs for now:
-
-- `data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336`
-- `data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336`
-- `data/runs/ch3_kipan_broad_gentle_20260409_161803`
-- `data/runs/ch3_brca_broad_gentle_20260409_161803`
-
-Important note:
-
-- The current manuscript draft is believed to use the `v2` broad runs for
-  both KIPAN and BRCA.
-- The KIPAN gentle broad run appears fully post-processed.
-- The BRCA gentle broad directory currently looks incomplete at the top level
-  and may only preserve partial worker outputs plus `run.log`.
-- Because of that, keep both `v2` and `gentle` broad runs for now rather than
-  trying to collapse them prematurely.
-
-
-## Figure Mapping
-
-This section maps manuscript figure usage to canonical paper-repo sources.
-
-### Main text figures
-
-#### F3.1
-
-Overleaf target:
-
-- `fig:ch3-framework`
-- `figures/lspin_fig1.png`
-
-Status:
-
-- Source code or source asset not yet traced.
-- If located later, preserve it, but this is not currently blocking the paper
-  repo cleanup.
-
-#### F3.2
-
-Overleaf target:
-
-- `fig:ch3-cindex-all-models`
-- `figures/fig_validation_cindex_all_models.png`
-
-Canonical source run:
-
-- `data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906`
-
-Likely relevant renderer/helper scripts:
-
-- `analyses/validate_models.py`
-- `analyses/plot_cindex_all_models.py`
-- `analyses/plot_validation_init_consistency.py`
-- `analyses/plot_validation_supp_boxplots.py`
-
-#### F3.3
-
-Overleaf target:
-
-- `fig:ch3-kipan-heatmaps`
-- `figures/diss_chap3_fig2_2.png`
-
-Canonical source run:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan`
-
-Likely relevant renderer/helper scripts:
+Main regeneration entry points:
 
 - `analyses/render_adaptive_manuscript_figures.py`
-- `analyses/ch3_kipan_adaptive_v2.py`
-- `analyses/debug_adaptive_heatmaps.py`
-
-#### F3.4
-
-Overleaf target:
-
-- `fig:ch3-paper-style-quant`
-- `figures/disschap3_fig3_2.png`
-
-Canonical source runs:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan`
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca`
-
-Likely relevant renderer/helper scripts:
-
-- `analyses/render_adaptive_manuscript_figures.py`
-- `analyses/ch3_kipan_adaptive_v2.py`
-- `analyses/ch3_brca_adaptive_v2.py`
+- `analyses/plot_kipan_boxplots.py`
 - `analyses/rerender_boxplots.py`
 
-#### F3.5
-
-Overleaf target:
-
-- `fig:ch3-broad-generalization`
-- `figures/disschap3_fig4.png`
-
-Keep-source runs:
-
-- `data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336`
-- `data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336`
-- `data/runs/ch3_kipan_broad_gentle_20260409_161803`
-- `data/runs/ch3_brca_broad_gentle_20260409_161803`
-
-Current working interpretation:
-
-- The manuscript likely uses the `v2` broad runs for both datasets.
-
-Likely relevant renderer/helper scripts:
-
-- `analyses/ch3_kipan_broad.py`
-- `analyses/ch3_brca_broad.py`
-- `analyses/ch3_broad_gentle.py`
-- `analyses/ch3_brca_broad_v2.py`
-- `analyses/plot_feature_set_transport_size_sweep.py`
-
-### Appendix B figures
-
-#### BRCA nonlinear heatmaps
-
-Overleaf target:
-
-- `fig:ch3-supp-brca-heatmaps`
-- `figures/diss_chap3_suppfig1.png`
-
-Canonical source run:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca`
-
-#### BRCA linear heatmaps
-
-Overleaf target:
-
-- `fig:ch3-supp-brca-heatmaps-linear`
-- `figures/diss_chap3_suppfig_linear_brca_heatmap.png`
-
-Canonical source run:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca`
-
-#### PANCAN heatmaps
-
-Overleaf target:
-
-- `fig:ch3-supp-PANCAN-heatmaps`
-- `figures/diss_chap3_suppfig2_2.png`
-
-Canonical source run:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan`
-
-#### PANCAN gated-vs-random signal boxplots
-
-Overleaf target:
-
-- `fig:ch3-gating-vs-random-in-linear-predictors`
-- `figures/PANCAN_fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png`
-
-Canonical source nested output:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
-
-#### KIPAN gated-vs-random signal boxplots
-
-Overleaf target:
-
-- `fig:ch3-gating-vs-random-in-linear-predictors-kipan`
-- `figures/kipan_fig_gated_patient_subset_signal_probe_gated_vs_random_signal_boxplots.png`
-
-Canonical source nested output:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan/linear_gated_probe_kipan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
-
-
-## Table and Supplementary Data Mapping
-
-The appendix tables should be treated as authoritative with respect to which
-frozen runs matter. Unless a later contrary trace is found, use the following
-working mapping.
-
-### Targeted-comparison / validation tables
-
-Likely canonical sources:
-
-- `data/runs/validate_goal1_gentle_all_kipan_brca_20260408_175906`
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020`
-
-Most likely affected appendix tables:
-
-- `tab:ch3-dataset-summary`
-- `tab:ch3-architecture-defaults`
-- `tab:ch3-graph-and-protocol`
-- `tab:ch3-selected-configs`
-- `tab:ch3-metric-definitions`
-
-Working interpretation:
-
-- Dataset/protocol/default tables are manuscript-authored summaries, but they
-  should remain consistent with the targeted/validation runs and package
-  defaults that produced the reported figures.
-- `tab:ch3-selected-configs` should be treated as depending primarily on the
-  adaptive-gentle run and its `selected_showcase_configs.csv` /
-  `selected_comparison_configs.csv` outputs.
-
-### Broad-sweep table
-
-Canonical sources:
-
-- `data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336`
-- `data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336`
-
-Appendix table:
-
-- `tab:ch3-broad-runs`
-
-Working interpretation:
-
-- Broad-related appendix tables should currently be treated as `v2`-based unless
-  a later explicit trace proves otherwise.
-
-### Recurrent-gene table and supplementary data
-
-Canonical source:
-
-- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
-
-Appendix table / supplementary data target:
-
-- `tab:ch3-PANCAN-recurrent-gene-examples`
-- supplementary data file referenced in Appendix B for recurrent PANCAN
-  selected-gene examples
-
-Canonical frozen CSV:
-
-- `pancan_linear_probe_recurrent_gene_supplement_table.csv`
-
-
-## Likely Scripts To Preserve
-
-These scripts are the best current candidates to keep on the publication-facing
-branch because they appear directly relevant to the canonical paper figures,
-tables, or frozen output structure.
-
-### Validation / comparison scripts
-
-- `analyses/validate_models.py`
-- `analyses/plot_cindex_all_models.py`
-- `analyses/plot_validation_init_consistency.py`
-- `analyses/plot_validation_supp_boxplots.py`
-- `analyses/run_validate_goal1_gentle_all_kipan_brca.sh`
-
-### Adaptive / heatmap / manuscript rendering scripts
+Main rerun entry points:
 
 - `analyses/ch3_kipan_adaptive_v2.py`
 - `analyses/ch3_brca_adaptive_v2.py`
 - `analyses/ch3_pancan_adaptive_v2.py`
-- `analyses/render_adaptive_manuscript_figures.py`
-- `analyses/debug_adaptive_heatmaps.py`
 - `analyses/run_adaptive_gentle_all_kipan_brca_pancan.sh`
 
-### Broad sweep scripts
+### Derived probe-style outputs preserved under the adaptive runs
 
-- `analyses/ch3_kipan_broad.py`
-- `analyses/ch3_brca_broad.py`
-- `analyses/ch3_broad_gentle.py`
-- `analyses/ch3_brca_broad_v2.py`
-- `analyses/run_ch3_broad_gentle_kipan_brca.sh`
+Nested canonical probe-analysis directories include:
 
-### Probe / recurrence / signal analysis scripts
+- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan/linear_gated_probe_kipan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
+- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
+
+These directories are the canonical source for:
+
+- gated-vs-random signal summaries
+- patient-subset predictivity summaries
+- recurrent-gene tables and related recurrence summaries
+
+Main regeneration entry points:
 
 - `analyses/quick_linear_gated_probe.py`
 - `analyses/plot_pancan_linear_probe_gene_recurrence.py`
-- `analyses/plot_kipan_feature_set_cv_transport.py`
 - `analyses/plot_pancan_gated_univariate_bias.py`
 - `analyses/plot_kipan_gated_univariate_dotplot.py`
+- `analyses/plot_kipan_feature_set_cv_transport.py`
 
+## 3. Broad sweeps
 
-## Keep-But-Not-Yet-Classified
+Canonical preserved broad runs:
 
-These items may still matter, but are not yet tied tightly enough to a specific
-paper output to classify as canonical or removable.
+- `data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336`
+- `data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336`
+- `data/runs/ch3_kipan_broad_gentle_20260409_161803`
+- `data/runs/ch3_brca_broad_gentle_20260409_161803`
+
+These runs are the canonical source for the sparsity-versus-performance sweep
+outputs retained in the archive.
+
+The strongest preserved broad references are the `v2` KIPAN and BRCA runs. The
+BRCA gentle broad run appears less complete at the top level and should be
+treated as supplementary provenance rather than the sole broad reference.
+
+Main regeneration entry points:
+
+- `analyses/plot_feature_set_transport_size_sweep.py`
+- `analyses/plot_kipan_boxplots.py`
+
+Main rerun entry points:
+
+- `analyses/ch3_kipan_broad.py`
+- `analyses/ch3_brca_broad_v2.py`
+- `analyses/ch3_broad_gentle.py`
+- `analyses/run_ch3_broad_gentle_kipan_brca.sh`
+
+## Secondary helpers kept in the publication branch
+
+These are retained because they may still be useful for provenance or
+convenience, but they are not the primary workflow entry points:
 
 - `analyses/ensure_project_data_artifacts.py`
 - `analyses/relabel_gate_families.py`
-- `analyses/rerender_boxplots.py`
 - `analyses/mlp_baseline.py`
+- `analyses/ch3_kipan_mlp_reference.py`
+- `analyses/ch3_kipan_mlp_overlay_figure.py`
 
+## Known unresolved item
 
-## Known Unresolved Items
+The schematic source corresponding to `figures/lspin_fig1.png` has not yet been
+traced to a generating script or source asset in this repository. This does not
+affect the main run-provenance or rerender workflows described above.
 
-### F3.1 schematic source
+## Cleanup rule
 
-Overleaf uses:
+When pruning or simplifying the publication-facing branch, default to:
 
-- `figures/lspin_fig1.png`
-
-The generating script or source asset has not yet been traced.
-
-### Exact Overleaf assembly scripts
-
-Some figure files in the manuscript source tree are clearly derived composites or
-renamed exports, for example:
-
-- `figures/diss_chap3_fig2_2.png`
-- `figures/disschap3_fig3_2.png`
-- `figures/disschap3_fig4.png`
-- `figures/diss_chap3_suppfig1.png`
-- `figures/diss_chap3_suppfig2_2.png`
-
-The manifest above captures the canonical frozen source runs, but the exact last
-assembly step into the Overleaf filenames may still need to be traced if the
-goal becomes preserving every final rendering step.
-
-### BRCA gentle broad completeness
-
-The directory
-
-- `data/runs/ch3_brca_broad_gentle_20260409_161803`
-
-currently appears to preserve:
-
-- `run.log`
-- `_partial_worker*` directories
-
-but not the top-level merged summaries/figures seen in the other broad runs.
-Keep it for now, but do not assume it alone is sufficient to reproduce the
-manuscript broad figure.
-
-
-## Cleanup Rule
-
-When pruning the paper repo for publication, default to:
-
-- keep all files explicitly named in this manifest
-- keep scripts directly supporting those files
+- keep the canonical run directories named here
+- keep the regeneration and rerun entry points named here
+- keep nested probe-analysis outputs under the adaptive run tree
 - archive uncertain extras rather than deleting them immediately
-- do not remove broad `v2` artifacts or the adaptive-gentle run
-- do not remove nested KIPAN/PANCAN probe-analysis outputs inside the adaptive
-  gentle run
 
 Anything outside that set should be treated as a candidate for archival
-relocation or exclusion from the publication-facing branch.
+relocation rather than part of the core publication surface.
