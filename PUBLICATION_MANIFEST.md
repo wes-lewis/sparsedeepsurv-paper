@@ -27,7 +27,7 @@ The publication-facing cleanup branch is:
 The repository centers on three workflow families:
 
 - validation and all-model comparison
-- adaptive gated analyses
+- targeted comparisons
 - broad sweeps
 
 For each workflow family, the preserved materials are intended to support three
@@ -70,7 +70,7 @@ Main rerun entry points:
 - `analyses/validate_models.py`
 - `analyses/run_validate_goal1_gentle_all_kipan_brca.sh`
 
-## 2. Adaptive gated analyses
+## 2. Targeted comparisons
 
 Canonical preserved run root:
 
@@ -82,7 +82,7 @@ Canonical per-dataset subdirectories:
 - `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca`
 - `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan`
 
-These adaptive runs are the canonical source for:
+These runs are the canonical source for:
 
 - selected gate heatmaps
 - selected configuration summaries
@@ -118,7 +118,7 @@ Main rerun entry points:
 - `analyses/ch3_pancan_adaptive_v2.py`
 - `analyses/run_adaptive_gentle_all_kipan_brca_pancan.sh`
 
-### Derived probe-style outputs preserved under the adaptive runs
+### Derived probe-style outputs preserved under the targeted-comparison runs
 
 Nested canonical probe-analysis directories include:
 
@@ -190,7 +190,7 @@ When pruning or simplifying the publication-facing branch, default to:
 
 - keep the canonical run directories named here
 - keep the regeneration and rerun entry points named here
-- keep nested probe-analysis outputs under the adaptive run tree
+- keep nested probe-analysis outputs under the targeted-comparison run tree
 - archive uncertain extras rather than deleting them immediately
 
 Anything outside that set should be treated as a candidate for archival
