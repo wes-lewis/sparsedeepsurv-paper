@@ -30,7 +30,13 @@ source tree. By default the scripts look for that checkout in the expected
 sibling location. If your layout differs, set `SPARSEDEEPSURV_SRC` to point to
 `sparsedeepsurv/src`.
 
-This archive does not currently provide a pinned environment file of its own.
+For environment setup, use the sibling `sparsedeepsurv` repository's package
+metadata and dependency lists, especially
+[`pyproject.toml`](../sparsedeepsurv/pyproject.toml) and
+[`requirements.txt`](../sparsedeepsurv/requirements.txt). Any paper-specific
+extras or local helper dependencies should be treated as additions on top of
+that base environment.
+
 The goal of the `polish` branch is to preserve the canonical processed
 artifacts, run outputs, and figure-generation entry points used for Chapter 3,
 not to serve as a raw-data end-to-end reproduction package.
