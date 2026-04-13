@@ -41,6 +41,9 @@ The goal of the `polish` branch is to preserve the canonical processed
 artifacts, run outputs, and figure-generation entry points used for the paper,
 not to serve as a raw-data end-to-end reproduction package.
 
+For literal result-by-result commands, see
+[`REPRODUCTION_GUIDE.md`](REPRODUCTION_GUIDE.md).
+
 ## What a user should take away
 
 This archive is meant to support three concrete use cases:
