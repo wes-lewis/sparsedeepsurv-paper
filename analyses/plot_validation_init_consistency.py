@@ -23,11 +23,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+if __package__ in {None, ""}:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-DEFAULT_RUN_DIR = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "validate_models_full_20260403_163907"
-)
+from _paths import CANONICAL_RUNS
+
+DEFAULT_RUN_DIR = CANONICAL_RUNS["validate_goal1_gentle_all_kipan_brca"]
 
 
 def _parse_args() -> argparse.Namespace:

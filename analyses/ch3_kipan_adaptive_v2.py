@@ -21,7 +21,7 @@ Grid (same as v1 / targeted_v3, 80 configs total):
 
 Usage:
   conda activate musevo
-  cd /banach2/wes/lspin-repos/sparsedeepsurv-paper
+  cd sparsedeepsurv-paper
   python analyses/ch3_kipan_adaptive_v2.py [--gpus 0 2 6 7]
 """
 from __future__ import annotations
@@ -34,16 +34,16 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# Make sparsedeepsurv importable from source if not installed
-_SDS_SRC = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-if _SDS_SRC not in sys.path:
-    sys.path.insert(0, _SDS_SRC)
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import PAPER_ROOT, ensure_repo_imports
+
+ensure_repo_imports()
 
 import numpy as np
 import pandas as pd
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-PAPER_ROOT       = Path(__file__).resolve().parents[1]
 KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"
 RESULTS_DEFAULT    = PAPER_ROOT / "data" / "runs" / "ch3_kipan_adaptive_v2"
 
@@ -145,9 +145,14 @@ def _worker(
     global_freq_threshold: float,
 ) -> str:
     import sys as _sys
-    _sds_src = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-    if _sds_src not in _sys.path:
-        _sys.path.insert(0, _sds_src)
+    from pathlib import Path as _Path
+
+    _analyses_dir = _Path(__file__).resolve().parent
+    if str(_analyses_dir) not in _sys.path:
+        _sys.path.insert(0, str(_analyses_dir))
+    from _paths import ensure_repo_imports as _ensure_repo_imports
+
+    _ensure_repo_imports()
 
     import numpy as np
     import pandas as pd

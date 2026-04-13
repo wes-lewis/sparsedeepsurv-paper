@@ -2,25 +2,31 @@
 """Stage split artifacts under sparsedeepsurv-paper/data/processed.
 
 This is a transitional reproducibility helper: it makes the analysis data
-objects project-local instead of letting scripts silently read legacy
-`/banach2/wes/lspin-pytorch/runs/...` paths. It copies the already-prepared
-split artifacts plus a small provenance manifest.
+objects project-local instead of letting scripts silently read from a local
+workstation checkout. It copies already-prepared split artifacts from
+dataset-specific source directories configured via environment variables, then
+writes a small provenance manifest alongside the copied files.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 from pathlib import Path
 
+if __package__ in {None, ""}:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-PAPER_ROOT = Path(__file__).resolve().parents[1]
+from _paths import PAPER_ROOT
+
 DEFAULT_OUT = PAPER_ROOT / "data" / "processed"
 
 LEGACY_SOURCES = {
-    "kipan": Path("/banach2/wes/lspin-pytorch/runs/kipan_20260209_213604"),
-    "brca": Path("/banach2/wes/lspin-pytorch/runs/tcga_brca20260214_001423"),
-    "pancan": Path("/banach2/wes/lspin-pytorch/runs/tcga_pancan_xena_20260330_top5000"),
+    "kipan": Path(os.environ["KIPAN_SOURCE_DIR"]) if "KIPAN_SOURCE_DIR" in os.environ else None,
+    "brca": Path(os.environ["BRCA_SOURCE_DIR"]) if "BRCA_SOURCE_DIR" in os.environ else None,
+    "pancan": Path(os.environ["PANCAN_SOURCE_DIR"]) if "PANCAN_SOURCE_DIR" in os.environ else None,
 }
 LOCAL_NAMES = {
     "kipan": "kipan_20260209_213604",
@@ -51,6 +57,11 @@ def main() -> None:
     args.out_root.mkdir(parents=True, exist_ok=True)
     for dataset in args.datasets:
         source = LEGACY_SOURCES[dataset]
+        if source is None:
+            raise FileNotFoundError(
+                f"{dataset}: source directory is not configured. Set the corresponding "
+                f"environment variable ({dataset.upper()}_SOURCE_DIR) before running."
+            )
         dest = args.out_root / LOCAL_NAMES[dataset]
         missing = [rel for rel in REQUIRED_FILES if not (source / rel).exists()]
         if missing:

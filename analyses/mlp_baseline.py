@@ -8,10 +8,14 @@ pipeline moves to the self-contained package API.
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
-SDS_SRC = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-if SDS_SRC not in sys.path:
-    sys.path.insert(0, SDS_SRC)
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import ensure_repo_imports
+
+ensure_repo_imports()
 
 from sparsedeepsurv import (  # noqa: E402,F401
     DeepSurvMLP,

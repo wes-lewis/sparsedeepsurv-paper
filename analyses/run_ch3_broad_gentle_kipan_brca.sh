@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/banach2/wes/lspin-repos/sparsedeepsurv-paper"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNS="$ROOT/data/runs"
 STAMP="$(date +%Y%m%d_%H%M%S)"
 PYTHON="/home/wes/.conda/envs/musevo/bin/python"

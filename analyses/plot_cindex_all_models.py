@@ -18,10 +18,13 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import pandas as pd
 
-DEFAULT_RUN_DIR = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "validate_models_goal1_v3_kipan_brca_20260407_171126"
-)
+if __package__ in {None, ""}:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import CANONICAL_RUNS
+
+DEFAULT_RUN_DIR = CANONICAL_RUNS["validate_goal1_gentle_all_kipan_brca"]
 
 
 def _parse_args() -> argparse.Namespace:

@@ -15,13 +15,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-ANALYSES_DIR = Path(__file__).resolve().parent
-SDS_SRC = Path("/banach2/wes/lspin-repos/sparsedeepsurv/src")
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-for path in [SDS_SRC]:
-    s = str(path)
-    if s not in sys.path:
-        sys.path.insert(0, s)
+from _paths import CANONICAL_RUNS, GENE_SETS_DIR, PROCESSED_DATASETS, ensure_repo_imports
+
+ensure_repo_imports()
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-sparsedeepsurv")
 os.environ.setdefault("XDG_CACHE_HOME", "/tmp/sparsedeepsurv-cache")
@@ -35,14 +34,8 @@ from scipy.stats import binomtest, chi2, mannwhitneyu, spearmanr, wilcoxon
 import sparsedeepsurv as sds
 
 
-KIPAN_RUN_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "ch3_kipan_adaptive_v2_selfcontained_ste_lspinmoderate_randominit_20260405_081219"
-)
-KIPAN_DATA_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-    "kipan_20260209_213604"
-)
+KIPAN_RUN_DEFAULT = CANONICAL_RUNS["kipan_adaptive_gentle"]
+KIPAN_DATA_DEFAULT = PROCESSED_DATASETS["kipan"]
 
 HISTO_LABELS = {
     "kidneyclearcellrenalcarcinoma": "Clear cell",
@@ -119,7 +112,7 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--gene-set-cache-dir",
         type=Path,
-        default=Path("/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/gene_sets/enrichr"),
+        default=GENE_SETS_DIR / "enrichr",
         help="Project-local cache for downloaded Enrichr/gseapy gene-set libraries.",
     )
     p.add_argument("--n-ablation-random", type=int, default=100)

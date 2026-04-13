@@ -8,7 +8,7 @@ added horizontal band showing MLP+L1 mean ± 1 SD across seeds.
 
 Usage:
   conda activate musevo
-  cd /banach2/wes/lspin-repos/sparsedeepsurv-paper
+  cd sparsedeepsurv-paper
   python analyses/ch3_kipan_mlp_overlay_figure.py \
     [--broad-dir data/runs/ch3_kipan_broad_knn8] \
     [--mlp-csv data/runs/ch3_kipan_mlp_reference/mlp_reference_cindex.csv] \

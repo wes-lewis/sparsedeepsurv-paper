@@ -14,12 +14,12 @@ import os
 import sys
 from pathlib import Path
 
-SDS_SRC = Path("/banach2/wes/lspin-repos/sparsedeepsurv/src")
-ANALYSES_DIR = Path(__file__).resolve().parent
-for p in [SDS_SRC, ANALYSES_DIR]:
-    s = str(p)
-    if s not in sys.path:
-        sys.path.insert(0, s)
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import ANALYSES_DIR, CANONICAL_RUNS, PROCESSED_DATASETS, ensure_repo_imports
+
+ensure_repo_imports(include_analyses_dir=True)
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-sparsedeepsurv")
 os.environ.setdefault("XDG_CACHE_HOME", "/tmp/sparsedeepsurv-cache")
@@ -36,24 +36,11 @@ from plot_kipan_gated_univariate_dotplot import _cox_score_test_matrix
 
 
 RUN_DEFAULTS = {
-    "pancan": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-        "ch3_pancan_adaptive_v2_selfcontained_ste_randominit_20260406_141705"
-    ),
-    "kipan": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-        "adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan"
-    ),
-    "brca": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-        "ch3_brca_adaptive_v2_selfcontained_ste_randominit_20260406_120115"
-    ),
+    "pancan": CANONICAL_RUNS["pancan_adaptive_gentle"],
+    "kipan": CANONICAL_RUNS["kipan_adaptive_gentle"],
+    "brca": CANONICAL_RUNS["brca_adaptive_gentle"],
 }
-DATA_DEFAULTS = {
-    "pancan": Path("/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/tcga_pancan_xena_20260330_top5000"),
-    "kipan": Path("/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/kipan_20260209_213604"),
-    "brca": Path("/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/tcga_brca20260214_001423"),
-}
+DATA_DEFAULTS = PROCESSED_DATASETS
 
 
 def _parse_args() -> argparse.Namespace:

@@ -18,7 +18,7 @@ BRCA specifics vs KIPAN:
 
 Usage:
   conda activate musevo
-  cd /banach2/wes/lspin-repos/sparsedeepsurv-paper
+  cd sparsedeepsurv-paper
   python analyses/ch3_brca_adaptive_v2.py [--gpus 0 2 6 7]
 """
 from __future__ import annotations
@@ -34,6 +34,8 @@ _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
+from _paths import PAPER_ROOT
+
 from ch3_kipan_adaptive_v2 import (  # noqa: E402
     _worker,
     _dispatch_phase,
@@ -48,8 +50,6 @@ from ch3_kipan_adaptive_v2 import (  # noqa: E402
 import numpy as np
 import pandas as pd
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-PAPER_ROOT        = Path(__file__).resolve().parents[1]
 BRCA_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "tcga_brca20260214_001423"
 RESULTS_DEFAULT   = PAPER_ROOT / "data" / "runs" / "ch3_brca_adaptive_v2"
 

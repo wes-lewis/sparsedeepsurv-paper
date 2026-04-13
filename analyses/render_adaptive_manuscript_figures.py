@@ -8,14 +8,12 @@ from pathlib import Path
 from typing import Dict, Tuple, Optional
 from types import SimpleNamespace
 
-ANALYSES_DIR = Path(__file__).resolve().parent
-PAPER_ROOT = ANALYSES_DIR.parent
-SDS_SRC = Path("/banach2/wes/lspin-repos/sparsedeepsurv/src")
-LSPIN_ROOT = Path("/banach2/wes/lspin-pytorch")
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-for p in [str(SDS_SRC), str(LSPIN_ROOT)]:
-    if p not in sys.path:
-        sys.path.insert(0, p)
+from _paths import ANALYSES_DIR, PAPER_ROOT, ensure_repo_imports
+
+ensure_repo_imports(include_lspin_pytorch=True)
 
 import numpy as np
 import pandas as pd

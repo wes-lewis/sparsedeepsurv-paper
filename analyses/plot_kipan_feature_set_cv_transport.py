@@ -15,12 +15,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ANALYSES_DIR = Path(__file__).resolve().parent
-SDS_SRC = Path("/banach2/wes/lspin-repos/sparsedeepsurv/src")
+if str(ANALYSES_DIR) not in sys.path:
+    sys.path.insert(0, str(ANALYSES_DIR))
+from _paths import CANONICAL_RUNS, PROCESSED_DATASETS, ensure_repo_imports
 
-for path in [SDS_SRC]:
-    s = str(path)
-    if s not in sys.path:
-        sys.path.insert(0, s)
+ensure_repo_imports()
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-sparsedeepsurv")
 os.environ.setdefault("XDG_CACHE_HOME", "/tmp/sparsedeepsurv-cache")
@@ -39,22 +38,10 @@ from sksurv.metrics import cumulative_dynamic_auc, integrated_brier_score
 import sparsedeepsurv as sds
 
 
-KIPAN_RUN_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "ch3_kipan_adaptive_v2_selfcontained_ste_lspinmoderate_randominit_20260405_081219"
-)
-KIPAN_DATA_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-    "kipan_20260209_213604"
-)
-BRCA_RUN_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "ch3_brca_adaptive_v2_selfcontained_ste_randominit_20260406_120115"
-)
-BRCA_DATA_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-    "tcga_brca20260214_001423"
-)
+KIPAN_RUN_DEFAULT = CANONICAL_RUNS["kipan_adaptive_gentle"]
+KIPAN_DATA_DEFAULT = PROCESSED_DATASETS["kipan"]
+BRCA_RUN_DEFAULT = CANONICAL_RUNS["brca_adaptive_gentle"]
+BRCA_DATA_DEFAULT = PROCESSED_DATASETS["brca"]
 
 
 @dataclass(frozen=True)

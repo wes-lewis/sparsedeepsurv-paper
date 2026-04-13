@@ -26,10 +26,12 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-PAPER_ROOT = Path(__file__).resolve().parents[1]
-_SDS_SRC = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-if _SDS_SRC not in sys.path:
-    sys.path.insert(0, _SDS_SRC)
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import PAPER_ROOT, ensure_repo_imports
+
+ensure_repo_imports()
 
 
 KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"

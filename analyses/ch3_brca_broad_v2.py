@@ -16,7 +16,7 @@ With 10 reps/config = 720 total model trains.
 
 Usage:
   conda activate musevo
-  cd /banach2/wes/lspin-repos/sparsedeepsurv-paper
+  cd sparsedeepsurv-paper
   python analyses/ch3_brca_broad_v2.py [--gpus 0 1 2 3 4 5 6 7]
 """
 from __future__ import annotations
@@ -32,14 +32,16 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import PAPER_ROOT, ensure_repo_imports
+
+ensure_repo_imports()
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
-PAPER_ROOT         = Path(__file__).resolve().parents[1]
 BRCA_DATA_DEFAULT  = PAPER_ROOT / "data" / "processed" / "tcga_brca20260214_001423"
 RESULTS_DEFAULT    = PAPER_ROOT / "data" / "runs" / "ch3_brca_broad_v2"
-
-_SDS_SRC = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-if _SDS_SRC not in sys.path:
-    sys.path.insert(0, _SDS_SRC)
 
 
 # ── Worker (runs in a subprocess — all heavy imports are local) ────────────────
@@ -67,10 +69,8 @@ def _worker(
     cluster_n_clusters: int,
     global_freq_threshold: float,
 ) -> str:
-    import sys as _sys
-    _sds_src = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-    if _sds_src not in _sys.path:
-        _sys.path.insert(0, _sds_src)
+    from _paths import ensure_repo_imports as _ensure_repo_imports
+    _ensure_repo_imports()
 
     import numpy as np
     import pandas as pd

@@ -2,11 +2,9 @@
 """
 Chapter 3 BRCA broad-balanced sweep.
 
-Reproduces outputs from:
-    /banach2/wes/lspin-pytorch/runs/ch3_rerun_brca_20260326_broad_balanced
-
-Usage:
-    python ch3_brca_broad.py --config configs/brca_broad.yaml --out tables/ figures/
+This is a placeholder entry point for a BRCA broad analysis that was not yet
+fully migrated into the paper archive. The canonical BRCA broad outputs used
+in the dissertation are preserved under `data/runs/`.
 """
 from __future__ import annotations
 
@@ -19,7 +17,10 @@ import sparsedeepsurv  # noqa: F401
 def main(config_path: Path, out_tables: Path, out_figures: Path) -> None:
     out_tables.mkdir(parents=True, exist_ok=True)
     out_figures.mkdir(parents=True, exist_ok=True)
-    raise NotImplementedError("Port from lspin-pytorch/run_brca_patient_smoothing_broad_balanced.py")
+    raise NotImplementedError(
+        "This wrapper has not been migrated into the self-contained paper archive. "
+        "Use the preserved canonical outputs under data/runs/ instead."
+    )
 
 
 if __name__ == "__main__":

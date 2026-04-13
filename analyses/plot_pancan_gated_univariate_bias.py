@@ -15,11 +15,11 @@ import sys
 from pathlib import Path
 
 ANALYSES_DIR = Path(__file__).resolve().parent
-SDS_SRC = Path("/banach2/wes/lspin-repos/sparsedeepsurv/src")
 if str(ANALYSES_DIR) not in sys.path:
     sys.path.insert(0, str(ANALYSES_DIR))
-if str(SDS_SRC) not in sys.path:
-    sys.path.insert(0, str(SDS_SRC))
+from _paths import CANONICAL_RUNS, PROCESSED_DATASETS, ensure_repo_imports
+
+ensure_repo_imports()
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib-sparsedeepsurv")
 os.environ.setdefault("XDG_CACHE_HOME", "/tmp/sparsedeepsurv-cache")
@@ -40,14 +40,8 @@ from plot_kipan_gated_univariate_dotplot import (
 )
 
 
-PANCAN_RUN_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "ch3_pancan_adaptive_v2_selfcontained_ste_randominit_20260406_141705"
-)
-PANCAN_DATA_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-    "tcga_pancan_xena_20260330_top5000"
-)
+PANCAN_RUN_DEFAULT = CANONICAL_RUNS["pancan_adaptive_gentle"]
+PANCAN_DATA_DEFAULT = PROCESSED_DATASETS["pancan"]
 
 
 def _parse_args() -> argparse.Namespace:

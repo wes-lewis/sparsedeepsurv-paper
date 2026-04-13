@@ -10,11 +10,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+if __package__ in {None, ""}:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-KIPAN_RUN_DEFAULT = Path(
-    "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-    "ch3_kipan_adaptive_v2_selfcontained_ste_lspinmoderate_randominit_20260405_081219"
-)
+from _paths import CANONICAL_RUNS
+
+KIPAN_RUN_DEFAULT = CANONICAL_RUNS["kipan_broad_v2"]
 
 
 def _parse_args() -> argparse.Namespace:

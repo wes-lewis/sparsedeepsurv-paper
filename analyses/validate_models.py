@@ -24,31 +24,20 @@ from typing import Dict, Iterable, List
 import numpy as np
 import pandas as pd
 
-SDS_SRC = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-for _path in [SDS_SRC]:
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import CANONICAL_RUNS, PAPER_ROOT, ensure_repo_imports
+
+ensure_repo_imports()
 
 import sparsedeepsurv as sds
 
-PAPER_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DEFAULT = PAPER_ROOT / "data" / "runs" / "validate_models"
 KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"
 BRCA_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "tcga_brca20260214_001423"
-KIPAN_SHOWCASE_DEFAULT = (
-    PAPER_ROOT
-    / "data"
-    / "runs"
-    / "ch3_kipan_adaptive_v2_selfcontained_ste_lspinmoderate_randominit_20260405_081219"
-    / "selected_showcase_configs.csv"
-)
-BRCA_SHOWCASE_DEFAULT = (
-    PAPER_ROOT
-    / "data"
-    / "runs"
-    / "ch3_brca_adaptive_v2_selfcontained_ste_randominit_20260406_120115"
-    / "selected_showcase_configs.csv"
-)
+KIPAN_SHOWCASE_DEFAULT = CANONICAL_RUNS["kipan_adaptive_gentle"] / "selected_showcase_configs.csv"
+BRCA_SHOWCASE_DEFAULT = CANONICAL_RUNS["brca_adaptive_gentle"] / "selected_showcase_configs.csv"
 
 DATASET_DEFAULTS = {
     "kipan": {

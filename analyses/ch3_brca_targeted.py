@@ -2,11 +2,9 @@
 """
 Chapter 3 BRCA targeted analysis.
 
-Reproduces outputs from:
-    /banach2/wes/lspin-pytorch/runs/ch3_rerun_brca_20260325_notebook_style_paper
-
-Usage:
-    python ch3_brca_targeted.py --config configs/brca_targeted.yaml --out tables/ figures/
+This is a placeholder entry point for a BRCA targeted analysis that was not yet
+fully migrated into the paper archive. The canonical BRCA targeted outputs used
+in the dissertation are preserved under `data/runs/`.
 """
 from __future__ import annotations
 
@@ -21,7 +19,10 @@ import sparsedeepsurv  # noqa: F401
 def main(config_path: Path, out_tables: Path, out_figures: Path) -> None:
     out_tables.mkdir(parents=True, exist_ok=True)
     out_figures.mkdir(parents=True, exist_ok=True)
-    raise NotImplementedError("Port from lspin-pytorch/run_brca_patient_smoothing_notebook_style_paper.py")
+    raise NotImplementedError(
+        "This wrapper has not been migrated into the self-contained paper archive. "
+        "Use the preserved canonical outputs under data/runs/ instead."
+    )
 
 
 if __name__ == "__main__":

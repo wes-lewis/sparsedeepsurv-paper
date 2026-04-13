@@ -18,8 +18,8 @@ PAPER_ROOT="$(dirname "$SCRIPT_DIR")"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RESULTS_DIR="${PAPER_ROOT}/data/runs/validate_goal1_gentle_all_kipan_brca_${TIMESTAMP}"
 
-KIPAN_SHOWCASE="${PAPER_ROOT}/data/runs/ch3_kipan_adaptive_v2_selfcontained_ste_lspinmoderate_randominit_20260405_081219/selected_showcase_configs.csv"
-BRCA_SHOWCASE="${PAPER_ROOT}/data/runs/ch3_brca_adaptive_v2_selfcontained_ste_randominit_20260406_120115/selected_showcase_configs.csv"
+KIPAN_SHOWCASE="${PAPER_ROOT}/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan/selected_showcase_configs.csv"
+BRCA_SHOWCASE="${PAPER_ROOT}/data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/brca/selected_showcase_configs.csv"
 
 echo "[run_validate_goal1_gentle_all_kipan_brca] Results dir: ${RESULTS_DIR}"
 echo "[run_validate_goal1_gentle_all_kipan_brca] Starting validate_models.py at $(date)"

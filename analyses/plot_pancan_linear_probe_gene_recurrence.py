@@ -23,38 +23,19 @@ import numpy as np
 import pandas as pd
 from scipy.stats import mannwhitneyu
 
+if __package__ in {None, ""}:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _paths import CANONICAL_RUNS, PROCESSED_DATASETS
+
 
 RUN_DEFAULTS = {
-    "pancan": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-        "ch3_pancan_adaptive_v2_selfcontained_ste_randominit_20260406_141705/"
-        "linear_gated_probe_pancan_3fold_2rep_lspin_smooth_lamx0p25"
-    ),
-    "kipan": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-        "adaptive_gentle_all_kipan_brca_pancan_20260408_193020/"
-        "kipan/linear_gated_probe_kipan_3fold_2rep"
-    ),
-    "brca": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/runs/"
-        "ch3_brca_adaptive_v2_selfcontained_ste_randominit_20260406_120115/"
-        "linear_gated_probe_brca_3fold_2rep"
-    ),
+    "pancan": CANONICAL_RUNS["pancan_adaptive_gentle"] / "linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep",
+    "kipan": CANONICAL_RUNS["kipan_adaptive_gentle"] / "linear_gated_probe_kipan_full_more_sparse_allfamilies_lamx3_3fold_2rep",
+    "brca": CANONICAL_RUNS["brca_adaptive_gentle"] / "linear_gated_probe_brca_3fold_2rep",
 }
-DATA_DEFAULTS = {
-    "pancan": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-        "tcga_pancan_xena_20260330_top5000"
-    ),
-    "kipan": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-        "kipan_20260209_213604"
-    ),
-    "brca": Path(
-        "/banach2/wes/lspin-repos/sparsedeepsurv-paper/data/processed/"
-        "tcga_brca20260214_001423"
-    ),
-}
+DATA_DEFAULTS = PROCESSED_DATASETS
 
 # Lightweight, transparent highlight list for biology-facing examples. This is
 # intentionally not used for any statistical test; it only flags recurrent

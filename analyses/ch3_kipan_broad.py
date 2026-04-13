@@ -11,7 +11,7 @@ Changes vs original (run_kipan_patient_smoothing_broad_v3.py):
 
 Usage:
   conda activate musevo
-  cd /banach2/wes/lspin-repos/sparsedeepsurv-paper
+  cd sparsedeepsurv-paper
   python analyses/ch3_kipan_broad.py [--gpus 0 2 6 7]
 """
 from __future__ import annotations
@@ -28,16 +28,22 @@ import numpy as np
 import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-LSPIN_ROOT = Path("/banach2/wes/lspin-pytorch")
+ANALYSES_DIR = Path(__file__).resolve().parent
+if str(ANALYSES_DIR) not in sys.path:
+    sys.path.insert(0, str(ANALYSES_DIR))
+from _paths import PAPER_ROOT, PROCESSED_DATASETS, ensure_repo_imports, lspin_pytorch_root
+
+LSPIN_ROOT = lspin_pytorch_root()
+if LSPIN_ROOT is None:
+    raise FileNotFoundError(
+        "Could not locate the optional lspin-pytorch checkout. "
+        "Set LSPIN_PYTORCH_ROOT to run analyses/ch3_kipan_broad.py."
+    )
 CLEANED = LSPIN_ROOT / "cleaned_analyses"
-PAPER_ROOT = Path(__file__).resolve().parents[1]
-KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"
+KIPAN_DATA_DEFAULT = PROCESSED_DATASETS["kipan"]
 RESULTS_DEFAULT = PAPER_ROOT / "data" / "runs" / "ch3_kipan_broad_knn8"
 
-_SDS_SRC = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-for _p in [str(LSPIN_ROOT), str(CLEANED), _SDS_SRC]:
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+ensure_repo_imports(include_lspin_pytorch=True)
 
 
 # ── Worker (runs in a subprocess — all heavy imports are local) ────────────────
@@ -70,9 +76,14 @@ def _worker(
     Returns path to a partial results CSV (raw rows) written to a temp dir.
     """
     import sys as _sys
-    _sds_src = "/banach2/wes/lspin-repos/sparsedeepsurv/src"
-    if _sds_src not in _sys.path:
-        _sys.path.insert(0, _sds_src)
+    from pathlib import Path as _Path
+
+    _analyses_dir = _Path(__file__).resolve().parent
+    if str(_analyses_dir) not in _sys.path:
+        _sys.path.insert(0, str(_analyses_dir))
+    from _paths import ensure_repo_imports as _ensure_repo_imports
+
+    _ensure_repo_imports()
 
     import numpy as np
     import pandas as pd
