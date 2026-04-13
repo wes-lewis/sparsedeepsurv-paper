@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 KIPAN adaptive sweep v1.
+KIPAN adaptive sweep v1.
 
 Two-phase design:
   Phase 1: all configs × n_phase1_reps (default 3) — identifies promising configs.

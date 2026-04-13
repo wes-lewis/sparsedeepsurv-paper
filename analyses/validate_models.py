@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validation runner for SparseDeepSurv chapter-3 experiments.
+Validation runner for SparseDeepSurv paper experiments.
 
 Implements two experiment families:
   - Goal 0: gate-type comparison (LSPIN vs Concrete)

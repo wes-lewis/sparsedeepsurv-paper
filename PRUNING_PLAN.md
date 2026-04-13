@@ -1,4 +1,4 @@
-# Chapter 3 First-Pass Pruning Plan
+# First-Pass Pruning Plan
 
 This document is a non-destructive pruning plan for the `polish` branch of
 `sparsedeepsurv-paper`.
@@ -13,17 +13,17 @@ It is intentionally a planning document only:
   decision.
 
 This plan follows the canonical keep-set described in
-`CHAPTER3_PUBLICATION_MANIFEST.md`.
+`PUBLICATION_MANIFEST.md`.
 
 
 ## Pruning Principles
 
-For the publication-facing Chapter 3 companion repo, prioritize:
+For the publication-facing companion repo, prioritize:
 
-- frozen run outputs that directly support dissertation Chapter 3 and Appendix B
+- frozen run outputs that directly support the paper and appendix material
 - scripts that generated or rerendered those kept outputs
 - small frozen supplementary CSVs and tables actually referenced by the
-  dissertation
+  manuscript
 - minimal documentation explaining the frozen-artifact structure
 
 Deprioritize:
@@ -31,25 +31,25 @@ Deprioritize:
 - superseded exploratory analyses
 - recovery notes and local workflow documents
 - scripts tied to old migrations or obsolete comparisons
-- tracked assets that are not used in the dissertation Chapter 3 pipeline
+- tracked assets that are not used in the paper pipeline
 
 
 ## Bucket A: Keep In Publication Branch
 
-These are the files that should remain on the Chapter 3 publication-facing
+These are the files that should remain on the publication-facing
 branch unless a later contradiction is discovered.
 
 ### Documentation to keep
 
 - `.gitignore`
-- `CHAPTER3_PUBLICATION_MANIFEST.md`
-- `CHAPTER3_PRUNING_PLAN.md`
+- `PUBLICATION_MANIFEST.md`
+- `PRUNING_PLAN.md`
 
 Future addition recommended:
 
 - add a real top-level `README.md` that explains this repo is a curated archival
-  companion for dissertation Chapter 3 / paper figures rather than a full
-  from-scratch recomputation repo.
+  companion for the paper figures rather than a full from-scratch
+  recomputation repo.
 
 ### Core analysis drivers to keep
 
@@ -149,8 +149,8 @@ Rationale:
 
 Rationale:
 
-- These appear to be intermediate workflow scripts rather than canonical Chapter
-  3 publication drivers.
+- These appear to be intermediate workflow scripts rather than canonical
+  publication drivers.
 
 ### Intermediate tuning scripts
 
@@ -177,13 +177,13 @@ Rationale:
 
 Rationale:
 
-- These appear to be older stages in the evolution of the Chapter 3 workflows.
+- These appear to be older stages in the evolution of the paper workflows.
 
 
 ## Bucket C: Hold For Now / Needs Decision
 
 These files should not be pruned yet because they are ambiguous, incomplete, or
-still entangled with known dissertation outputs.
+still entangled with known manuscript outputs.
 
 ### Potentially legacy but still informative
 
@@ -200,9 +200,9 @@ still entangled with known dissertation outputs.
 
 Rationale:
 
-- These include legacy dependencies and may not be part of the final Chapter 3
+- These include legacy dependencies and may not be part of the final paper
   core story, but they also connect to tracked figure assets already in the repo.
-- Do not prune until it is clear they are truly irrelevant to the dissertation
+- Do not prune until it is clear they are truly irrelevant to the paper
   artifacts.
 
 ### Incomplete or stub-like files
@@ -258,7 +258,7 @@ When we start acting on this plan, do it in this order:
 
 This plan is deliberately conservative.
 
-- It preserves everything needed for Chapter 3 figure/table provenance.
+- It preserves everything needed for figure/table provenance.
 - It avoids deleting anything before the branch structure and manifest are in
   place.
 - It gives us a clean next move: reorganize first, prune later.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 KIPAN broad sweep — paper-repo version, multi-GPU.
+KIPAN broad sweep — paper-repo version, multi-GPU.
 
 Changes vs original (run_kipan_patient_smoothing_broad_v3.py):
   - knn_k default = 8

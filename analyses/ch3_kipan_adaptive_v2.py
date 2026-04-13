@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 KIPAN adaptive sweep v2 — independent-init phase-2 replicates.
+KIPAN adaptive sweep v2 — independent-init phase-2 replicates.
 
 Two-phase structure:
   Phase 1 screens the full grid with 3 random-init reps/config.

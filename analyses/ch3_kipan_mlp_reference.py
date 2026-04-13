@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 KIPAN MLP+L1 reference run.
+KIPAN MLP+L1 reference run.
 
 Trains MLP+L1 (no pruning) using the same data split, seed scheme, and
 hyperparameters as the KIPAN targeted run, then saves per-seed C-indexes.

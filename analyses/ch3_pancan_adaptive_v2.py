@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 TCGA Pan-Cancer adaptive sweep v2 — independent-init phase-2 replicates.
+TCGA Pan-Cancer adaptive sweep v2 — independent-init phase-2 replicates.
 
 Two-phase adaptive design aligned with the current KIPAN/BRCA runs:
   Phase 1: all configs x n_phase1_reps (default 3) - screening.

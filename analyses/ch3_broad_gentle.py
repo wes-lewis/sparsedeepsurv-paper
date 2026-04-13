@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 broad gated sweep under the gentler baseline-like regime.
+Broad gated sweep under the gentler baseline-like regime.
 
 This broad rerun is meant to replace the older broad maps for KIPAN / BRCA when
 we want smoothing-vs-sparsity trends under the updated training setup:

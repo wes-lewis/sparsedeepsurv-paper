@@ -1,11 +1,11 @@
-# Chapter 3 Publication Manifest
+# Publication Manifest
 
-This document records the current publication-oriented keep set for the Chapter 3
-paper/dissertation companion repo. The governing principle is:
+This document records the current publication-oriented keep set for the paper
+companion repo. The governing principle is:
 
-- Preserve the exact frozen artifacts that support the Chapter 3 main figures,
-  Appendix B figures, Appendix B tables, and related supplementary data that
-  appear in `/banach2/wes/Overleaf/dissertation`.
+- Preserve the exact frozen artifacts that support the main figures,
+  appendix figures, appendix tables, and related supplementary data in the
+  manuscript source tree.
 - Avoid rerunning analyses or regenerating results.
 - Treat this repo as a curated archival companion rather than a full
   from-scratch recomputation pipeline.
@@ -21,7 +21,7 @@ The working cleanup branch is:
 
 ## Canonical Run Directories
 
-These are the run directories currently considered canonical for Chapter 3.
+These are the run directories currently considered canonical for the paper.
 
 ### Validation / all-model comparison
 
@@ -112,7 +112,7 @@ Keep all four broad runs for now:
 
 Important note:
 
-- The current dissertation draft is believed to use the `v2` broad runs for
+- The current manuscript draft is believed to use the `v2` broad runs for
   both KIPAN and BRCA.
 - The KIPAN gentle broad run appears fully post-processed.
 - The BRCA gentle broad directory currently looks incomplete at the top level
@@ -123,7 +123,7 @@ Important note:
 
 ## Figure Mapping
 
-This section maps the dissertation figure usage to canonical paper-repo sources.
+This section maps manuscript figure usage to canonical paper-repo sources.
 
 ### Main text figures
 
@@ -137,7 +137,7 @@ Overleaf target:
 Status:
 
 - Source code or source asset not yet traced.
-- If located later, preserve it, but this is not currently blocking the Chapter 3
+- If located later, preserve it, but this is not currently blocking the paper
   repo cleanup.
 
 #### F3.2
@@ -210,7 +210,7 @@ Keep-source runs:
 
 Current working interpretation:
 
-- Dissertation likely uses the `v2` broad runs for both datasets.
+- The manuscript likely uses the `v2` broad runs for both datasets.
 
 Likely relevant renderer/helper scripts:
 
@@ -301,7 +301,7 @@ Most likely affected appendix tables:
 
 Working interpretation:
 
-- Dataset/protocol/default tables are dissertation-authored summaries, but they
+- Dataset/protocol/default tables are manuscript-authored summaries, but they
   should remain consistent with the targeted/validation runs and package
   defaults that produced the reported figures.
 - `tab:ch3-selected-configs` should be treated as depending primarily on the
@@ -344,7 +344,7 @@ Canonical frozen CSV:
 ## Likely Scripts To Preserve
 
 These scripts are the best current candidates to keep on the publication-facing
-branch because they appear directly relevant to the canonical Chapter 3 figures,
+branch because they appear directly relevant to the canonical paper figures,
 tables, or frozen output structure.
 
 ### Validation / comparison scripts
@@ -384,7 +384,7 @@ tables, or frozen output structure.
 ## Keep-But-Not-Yet-Classified
 
 These items may still matter, but are not yet tied tightly enough to a specific
-Chapter 3 output to classify as canonical or removable.
+paper output to classify as canonical or removable.
 
 - `analyses/ensure_project_data_artifacts.py`
 - `analyses/relabel_gate_families.py`
@@ -404,7 +404,7 @@ The generating script or source asset has not yet been traced.
 
 ### Exact Overleaf assembly scripts
 
-Some dissertation figure files in Overleaf are clearly derived composites or
+Some figure files in the manuscript source tree are clearly derived composites or
 renamed exports, for example:
 
 - `figures/diss_chap3_fig2_2.png`
@@ -430,7 +430,7 @@ currently appears to preserve:
 
 but not the top-level merged summaries/figures seen in the other broad runs.
 Keep it for now, but do not assume it alone is sufficient to reproduce the
-dissertation broad figure.
+manuscript broad figure.
 
 
 ## Cleanup Rule

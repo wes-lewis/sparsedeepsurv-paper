@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 KIPAN targeted analysis v3 — multi-sigma, wide grid, supp table.
+KIPAN targeted analysis v3 — multi-sigma, wide grid, supp table.
 
 Design:
   - 5 lambda values per family × 2 gate sigmas × 4 smooth values = 80 configs total

@@ -1,9 +1,9 @@
 # `sparsedeepsurv-paper`
 
-This repository is the publication-oriented archive for the Chapter 3 analyses.
+This repository is the publication-oriented archive for the paper analyses.
 It is structured to preserve the canonical runs, figures, tables, and analysis
-entry points used in the dissertation while reducing dependence on workstation-
-specific paths.
+entry points used in the manuscript-facing workflow while reducing dependence on
+workstation-specific paths.
 
 The archive is not intended to be a from-scratch raw-data reproduction package.
 Instead, it is a curated companion to the [`sparsedeepsurv`](../sparsedeepsurv)
@@ -38,7 +38,7 @@ extras or local helper dependencies should be treated as additions on top of
 that base environment.
 
 The goal of the `polish` branch is to preserve the canonical processed
-artifacts, run outputs, and figure-generation entry points used for Chapter 3,
+artifacts, run outputs, and figure-generation entry points used for the paper,
 not to serve as a raw-data end-to-end reproduction package.
 
 ## Layout
@@ -46,12 +46,12 @@ not to serve as a raw-data end-to-end reproduction package.
 - `analyses/`: analysis scripts, figure renderers, and validation utilities
 - `configs/`: lightweight config files for a few helper wrappers
 - `data/processed/`: project-local processed split artifacts used by the paper analyses
-- `data/runs/`: canonical saved run outputs used for Chapter 3 figures/tables
+- `data/runs/`: canonical saved run outputs used for the paper figures/tables
 - `figures/`: generated manuscript and appendix figures
 - `tables/`: generated summary tables
 - `archive/`: noncanonical recovery notes, older scripts, and local project history retained for reference but not part of the main publication surface
 
-## Canonical Chapter 3 runs
+## Canonical preserved runs
 
 The main preserved run directories are:
 
@@ -63,7 +63,7 @@ The main preserved run directories are:
 - `data/runs/ch3_brca_broad_gentle_20260409_161803`
 
 For the figure-by-figure mapping used to curate this archive, see
-[`CHAPTER3_PUBLICATION_MANIFEST.md`](CHAPTER3_PUBLICATION_MANIFEST.md).
+[`PUBLICATION_MANIFEST.md`](PUBLICATION_MANIFEST.md).
 
 ## Canonical scripts
 
@@ -141,7 +141,7 @@ repository and derive paths relative to their own location.
 ## Scope and current status
 
 The `polish` branch is intended to be the public-facing version of this paper
-archive. The canonical outputs used in the dissertation are preserved here, and
+archive. The canonical outputs used in the paper are preserved here, and
 the active scripts are being normalized to use relative paths and project-local
 artifacts. Older exploratory material is retained under `archive/` so the main
 publication surface stays smaller and easier to understand.

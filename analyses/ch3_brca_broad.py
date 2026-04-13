@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Chapter 3 BRCA broad-balanced sweep.
+BRCA broad-balanced sweep.
 
 This is a placeholder entry point for a BRCA broad analysis that was not yet
-fully migrated into the paper archive. The canonical BRCA broad outputs used
-in the dissertation are preserved under `data/runs/`.
+fully migrated into the paper archive. The canonical BRCA broad outputs are
+preserved under `data/runs/`.
 """
 from __future__ import annotations
 

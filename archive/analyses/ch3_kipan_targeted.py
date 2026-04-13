@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 KIPAN targeted analysis — paper-repo version.
+KIPAN targeted analysis — paper-repo version.
 
 Changes vs original (run_kipan_patient_smoothing_notebook_style_paper.py):
   - knn_k default = 8

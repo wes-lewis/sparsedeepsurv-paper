@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 KIPAN — MLP+L1 reference overlay on broad sweep C-index vs Khard plots.
+KIPAN MLP+L1 reference overlay on broad sweep C-index vs Khard plots.
 
 Loads the broad sweep summary CSV and the MLP reference C-index CSV, then
 re-renders the C-index vs Khard LOESS figures for LSPIN and Concrete with an

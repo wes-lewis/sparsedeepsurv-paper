@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Chapter 3 BRCA targeted analysis.
+BRCA targeted analysis.
 
 This is a placeholder entry point for a BRCA targeted analysis that was not yet
-fully migrated into the paper archive. The canonical BRCA targeted outputs used
-in the dissertation are preserved under `data/runs/`.
+fully migrated into the paper archive. The canonical BRCA targeted outputs are
+preserved under `data/runs/`.
 """
 from __future__ import annotations
 

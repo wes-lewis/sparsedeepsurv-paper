@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 BRCA adaptive sweep v2 — independent-init phase-2 replicates.
+BRCA adaptive sweep v2 — independent-init phase-2 replicates.
 
 Two-phase adaptive design (identical structure to ch3_kipan_adaptive_v2):
   Phase 1: all configs x n_phase1_reps (default 3) - screening.

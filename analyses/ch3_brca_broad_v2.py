@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 3 BRCA broad sweep — multi-GPU, self-contained.
+BRCA broad sweep — multi-GPU, self-contained.
 
 Mirrors ch3_kipan_broad.py structure but with BRCA-specific parameters:
   - Data:     tcga_brca20260214_001423 (723 train / 311 test, 24000 genes)
