@@ -26,19 +26,12 @@ import numpy as np
 ANALYSES_DIR = Path(__file__).resolve().parent
 if str(ANALYSES_DIR) not in sys.path:
     sys.path.insert(0, str(ANALYSES_DIR))
-from _paths import PAPER_ROOT, PROCESSED_DATASETS, ensure_repo_imports, lspin_pytorch_root
+from _paths import PAPER_ROOT, PROCESSED_DATASETS, ensure_repo_imports
 
-LSPIN_ROOT = lspin_pytorch_root()
-if LSPIN_ROOT is None:
-    raise FileNotFoundError(
-        "Could not locate the optional lspin-pytorch checkout. "
-        "Set LSPIN_PYTORCH_ROOT to run analyses/ch3_kipan_mlp_reference.py."
-    )
-CLEANED = LSPIN_ROOT / "cleaned_analyses"
 KIPAN_DATA_DEFAULT = PROCESSED_DATASETS["kipan"]
 RESULTS_DEFAULT = PAPER_ROOT / "data" / "runs" / "ch3_kipan_mlp_reference"
 
-ensure_repo_imports(include_analyses_dir=True, include_lspin_pytorch=True)
+ensure_repo_imports(include_analyses_dir=True)
 
 
 def parse_args() -> argparse.Namespace:

@@ -13,7 +13,7 @@ if __package__ in {None, ""}:
 
 from _paths import ANALYSES_DIR, PAPER_ROOT, ensure_repo_imports
 
-ensure_repo_imports(include_lspin_pytorch=True)
+ensure_repo_imports(include_analyses_dir=True)
 
 import numpy as np
 import pandas as pd

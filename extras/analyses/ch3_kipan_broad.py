@@ -31,19 +31,12 @@ import pandas as pd
 ANALYSES_DIR = Path(__file__).resolve().parent
 if str(ANALYSES_DIR) not in sys.path:
     sys.path.insert(0, str(ANALYSES_DIR))
-from _paths import PAPER_ROOT, PROCESSED_DATASETS, ensure_repo_imports, lspin_pytorch_root
+from _paths import PAPER_ROOT, PROCESSED_DATASETS, ensure_repo_imports
 
-LSPIN_ROOT = lspin_pytorch_root()
-if LSPIN_ROOT is None:
-    raise FileNotFoundError(
-        "Could not locate the optional lspin-pytorch checkout. "
-        "Set LSPIN_PYTORCH_ROOT to run analyses/ch3_kipan_broad.py."
-    )
-CLEANED = LSPIN_ROOT / "cleaned_analyses"
 KIPAN_DATA_DEFAULT = PROCESSED_DATASETS["kipan"]
 RESULTS_DEFAULT = PAPER_ROOT / "data" / "runs" / "ch3_kipan_broad_knn8"
 
-ensure_repo_imports(include_lspin_pytorch=True)
+ensure_repo_imports(include_analyses_dir=True)
 
 
 # ── Worker (runs in a subprocess — all heavy imports are local) ────────────────
@@ -285,9 +278,8 @@ def _post_process(results_dir: Path, args) -> None:
 
     # Observation binned figures module — imports may vary by version; make optional
     import sys as _sys
-    for _p in [str(LSPIN_ROOT), str(CLEANED)]:
-        if _p not in _sys.path:
-            _sys.path.insert(0, _p)
+    if str(ANALYSES_DIR) not in _sys.path:
+        _sys.path.insert(0, str(ANALYSES_DIR))
     try:
         import cleaned_analyses.make_patient_smoothing_observation_binned_figures as _obs_mod
         if not hasattr(_obs_mod, "load_config_ratio"):

@@ -34,7 +34,7 @@ if __package__ in {None, ""}:
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _paths import PAPER_ROOT, lspin_pytorch_root
+from _paths import PAPER_ROOT
 
 
 DATASET_NAME = "tcga_brca20260214_001423"
@@ -45,18 +45,13 @@ DEFAULT_RANDOM_STATE = 42
 
 
 def _default_firehose_file(filename: str) -> Path | None:
-    root = lspin_pytorch_root()
-    candidates = []
-    if root is not None:
-        candidates.append(root)
-    candidates.extend(
-        [
-            PAPER_ROOT.parents[2] / "lspin-pytorch",
-            PAPER_ROOT.parent / "lspin-pytorch",
-        ]
-    )
+    candidates = [
+        PAPER_ROOT / "data" / "TCGA",
+        PAPER_ROOT.parents[2] / "lspin-pytorch" / "data" / "TCGA",
+        PAPER_ROOT.parent / "lspin-pytorch" / "data" / "TCGA",
+    ]
     for candidate in candidates:
-        path = candidate / "data" / "TCGA" / filename
+        path = candidate / filename
         if path.exists():
             return path
     return None

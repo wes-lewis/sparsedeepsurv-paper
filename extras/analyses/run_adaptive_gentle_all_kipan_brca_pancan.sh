@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PYTHON="${PYTHON:-python}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAPER_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TS="$(date +%Y%m%d_%H%M%S)"
@@ -18,15 +19,15 @@ echo "[launcher] gpus: ${GPUS[*]}"
 
 cd "${PAPER_ROOT}"
 
-conda run -n musevo python analyses/ch3_kipan_adaptive_v2.py \
+"${PYTHON}" analyses/ch3_kipan_adaptive_v2.py \
   --gpus "${GPUS[@]}" \
   --results-dir "${RUN_ROOT}/kipan"
 
-conda run -n musevo python analyses/ch3_brca_adaptive_v2.py \
+"${PYTHON}" analyses/ch3_brca_adaptive_v2.py \
   --gpus "${GPUS[@]}" \
   --results-dir "${RUN_ROOT}/brca"
 
-conda run -n musevo python analyses/ch3_pancan_adaptive_v2.py \
+"${PYTHON}" analyses/ch3_pancan_adaptive_v2.py \
   --gpus "${GPUS[@]}" \
   --results-dir "${RUN_ROOT}/pancan"
 

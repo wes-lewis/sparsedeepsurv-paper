@@ -15,7 +15,7 @@ ln -sfn adaptive_gentle_all_kipan_brca_pancan_20260408_193020 "$RUNS/adaptive"
 # Broad sweep symlinks (v2 = primary, gentle = supplementary)
 mkdir -p "$RUNS/broad"
 ln -sfn ../ch3_kipan_broad_v2_selfcontained_ste_20260407_012336 "$RUNS/broad/kipan_v2"
-ln -sfn ../ch3_brca_broad_v2_selfcontained_ste_20260407_012336  "$RUNS/broad/brca_v2"
+ln -sfn ../ch3_brca_broad_v2_recovered_20260326                "$RUNS/broad/brca_v2"
 ln -sfn ../ch3_kipan_broad_gentle_20260409_161803               "$RUNS/broad/kipan_gentle"
 ln -sfn ../ch3_brca_broad_gentle_20260409_161803                "$RUNS/broad/brca_gentle"
 

@@ -40,32 +40,17 @@ def sparsedeepsurv_src() -> Path | None:
     candidates = _candidate_paths(
         Path(env) if env else None,
         PAPER_ROOT.parent / "sparsedeepsurv" / "src",
-        PAPER_ROOT.parents[1] / "lspin-repos" / "sparsedeepsurv" / "src",
     )
     return _existing_path(candidates)
 
 
-def lspin_pytorch_root() -> Path | None:
-    env = os.environ.get("LSPIN_PYTORCH_ROOT")
-    candidates = _candidate_paths(
-        Path(env) if env else None,
-        PAPER_ROOT.parents[1] / "lspin-pytorch",
-        PAPER_ROOT.parent / "lspin-pytorch",
-    )
-    return _existing_path(candidates)
-
-
-def ensure_repo_imports(*, include_analyses_dir: bool = False, include_lspin_pytorch: bool = False) -> None:
+def ensure_repo_imports(*, include_analyses_dir: bool = False) -> None:
     to_add: list[Path] = []
     sds_src = sparsedeepsurv_src()
     if sds_src is not None:
         to_add.append(sds_src)
     if include_analyses_dir:
         to_add.append(ANALYSES_DIR)
-    if include_lspin_pytorch:
-        lp_root = lspin_pytorch_root()
-        if lp_root is not None:
-            to_add.append(lp_root)
     for p in to_add:
         s = str(p)
         if s not in sys.path:
@@ -94,7 +79,7 @@ CANONICAL_RUNS = {
         "adaptive_gentle_all_kipan_brca_pancan_20260408_193020"
     ) / "pancan",
     "kipan_broad_v2": canonical_run_dir("ch3_kipan_broad_v2_selfcontained_ste_20260407_012336"),
-    "brca_broad_v2": canonical_run_dir("ch3_brca_broad_v2_selfcontained_ste_20260407_012336"),
+    "brca_broad_v2": canonical_run_dir("ch3_brca_broad_v2_recovered_20260326"),
     "kipan_broad_gentle": canonical_run_dir("ch3_kipan_broad_gentle_20260409_161803"),
     "brca_broad_gentle": canonical_run_dir("ch3_brca_broad_gentle_20260409_161803"),
 }
