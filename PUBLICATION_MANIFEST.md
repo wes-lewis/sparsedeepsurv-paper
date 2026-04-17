@@ -144,16 +144,12 @@ Main regeneration entry points:
 Canonical preserved broad runs:
 
 - `data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336`
-- `data/runs/ch3_brca_broad_v2_selfcontained_ste_20260407_012336`
+- `data/runs/ch3_brca_broad_v2_recovered_20260326`
 - `data/runs/ch3_kipan_broad_gentle_20260409_161803`
-- `data/runs/ch3_brca_broad_gentle_20260409_161803`
+- `data/runs/ch3_brca_broad_gentle_20260413_190053`
 
 These runs are the canonical source for the sparsity-versus-performance sweep
 outputs retained in the archive.
-
-The strongest preserved broad references are the `v2` KIPAN and BRCA runs. The
-BRCA gentle broad run appears less complete at the top level and should be
-treated as supplementary provenance rather than the sole broad reference.
 
 Main regeneration entry points:
 

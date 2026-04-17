@@ -8,9 +8,9 @@
 Timestamped originals:
 
 - `ch3_kipan_broad_v2_selfcontained_ste_20260407_012336`
-- `ch3_brca_broad_v2_selfcontained_ste_20260407_012336`
+- `ch3_brca_broad_v2_recovered_20260326`
 - `ch3_kipan_broad_gentle_20260409_161803`
-- `ch3_brca_broad_gentle_20260409_161803`
+- `ch3_brca_broad_gentle_20260413_190053`
 
 ## Key outputs
 

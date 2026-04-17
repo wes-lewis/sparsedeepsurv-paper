@@ -37,11 +37,15 @@ extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/**
 !extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/**/*.png
 !extras/data/runs/ch3_kipan_broad_v2_selfcontained_ste_20260407_012336/**/*.csv
 
-!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/
-extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**
-!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**/
-!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**/*.png
-!extras/data/runs/ch3_brca_broad_gentle_20260409_161803/**/*.csv
+!extras/data/runs/ch3_brca_broad_gentle_20260413_190053/
+extras/data/runs/ch3_brca_broad_gentle_20260413_190053/**
+!extras/data/runs/ch3_brca_broad_gentle_20260413_190053/*.png
+!extras/data/runs/ch3_brca_broad_gentle_20260413_190053/*.csv
+
+!extras/data/runs/ch3_brca_broad_v2_recovered_20260326/
+extras/data/runs/ch3_brca_broad_v2_recovered_20260326/**
+!extras/data/runs/ch3_brca_broad_v2_recovered_20260326/*.png
+!extras/data/runs/ch3_brca_broad_v2_recovered_20260326/*.csv
 
 # keep worker partials, checkpoints, and legacy duplicate labels out of the
 # publication branch even inside preserved run trees
