@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import re
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -29,13 +30,17 @@ import pandas as pd
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _paths import PAPER_ROOT, ensure_repo_imports
+from _paths import PAPER_ROOT, ensure_repo_imports, sparsedeepsurv_src
 
 ensure_repo_imports()
+
+_SDS_SRC_PATH = sparsedeepsurv_src()
+_SDS_SRC = str(_SDS_SRC_PATH) if _SDS_SRC_PATH is not None else None
 
 
 KIPAN_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "kipan_20260209_213604"
 BRCA_DATA_DEFAULT = PAPER_ROOT / "data" / "processed" / "tcga_brca20260214_001423"
+CACHE_ROOT = PAPER_ROOT / "data" / "cache" / "ch3_broad_gentle"
 
 
 DATASET_SPECS = {
@@ -359,12 +364,36 @@ def _save_broad_multiplot_for_families(
 
 def _build_configs(args) -> List[Dict]:
     spec = DATASET_SPECS[args.dataset]
+    selected_families = set(args.families) if args.families else None
+    smooth_scaled_families = set(args.smooth_lambda_scale_families) if args.smooth_lambda_scale_families else set()
+    smooth_grid = [float(x) for x in (args.sample_smooth_grid if args.sample_smooth_grid else spec["sample_smooth_grid"])]
+    if 0.0 not in smooth_grid:
+        smooth_grid = [0.0] + smooth_grid
+    smooth_grid = sorted(set(smooth_grid))
+    nosmooth_lambdas_override = [float(x) for x in args.nosmooth_lambdas] if args.nosmooth_lambdas else None
+    smooth_lambdas_override = [float(x) for x in args.smooth_lambdas] if args.smooth_lambdas else None
+    lspin_nosmooth_lambdas = [float(x) for x in args.lspin_nosmooth_lambdas] if args.lspin_nosmooth_lambdas else None
+    lspin_smooth_lambdas = [float(x) for x in args.lspin_smooth_lambdas] if args.lspin_smooth_lambdas else None
+    lspin_sigmas_override = [float(x) for x in args.lspin_sigmas] if args.lspin_sigmas else None
     all_configs: List[Dict] = []
     cfg_idx = 0
     for family_label, family in spec["families"].items():
-        for sigma in family["sigmas"]:
-            for smooth in spec["sample_smooth_grid"]:
-                for lam in family["lambdas"]:
+        if selected_families is not None and family_label not in selected_families:
+            continue
+        family_lr = float(args.lr_override) if args.lr_override is not None else float(family["lr"])
+        sigma_grid = lspin_sigmas_override if (family_label in {"LSPIN", "L-LSPIN"} and lspin_sigmas_override is not None) else family["sigmas"]
+        for sigma in sigma_grid:
+            for smooth in smooth_grid:
+                if family_label == "LSPIN" and lspin_nosmooth_lambdas is not None:
+                    lam_grid = lspin_nosmooth_lambdas if smooth == 0.0 else (lspin_smooth_lambdas if lspin_smooth_lambdas is not None else lspin_nosmooth_lambdas)
+                elif nosmooth_lambdas_override is not None:
+                    lam_grid = nosmooth_lambdas_override if smooth == 0.0 else (smooth_lambdas_override if smooth_lambdas_override is not None else nosmooth_lambdas_override)
+                else:
+                    lam_grid = family["lambdas"]
+                for lam in lam_grid:
+                    lam_eff = float(lam)
+                    if smooth > 0 and family_label in smooth_scaled_families:
+                        lam_eff *= float(args.smooth_lambda_scale)
                     cfg_idx += 1
                     all_configs.append(
                         {
@@ -373,11 +402,12 @@ def _build_configs(args) -> List[Dict]:
                             "gate_type": family["gate_type"],
                             "predictor": family["predictor"],
                             "gate_sigma": float(sigma),
-                            "lambda_sparse": float(lam),
+                            "lambda_sparse": lam_eff,
+                            "lambda_sparse_base": float(lam),
                             "lambda_sample_smooth": float(smooth),
                             "temperature": float(family["temperature"]),
-                            "patience": int(family["patience"]),
-                            "lr": float(family["lr"]),
+                            "patience": int(args.patience_override if args.patience_override is not None else family["patience"]),
+                            "lr": family_lr,
                             "gating_hidden_dim": int(COMMON_GATED_DEFAULTS["gating_hidden_dim"]),
                             "gate_hidden_dropout_p": float(COMMON_GATED_DEFAULTS["gate_hidden_dropout_p"]),
                             "risk_hidden_dims": tuple(COMMON_GATED_DEFAULTS["risk_hidden_dims"]) if family["predictor"] == "mlp" else (),
@@ -389,12 +419,148 @@ def _build_configs(args) -> List[Dict]:
     return all_configs
 
 
+def _cfg_stem(global_cfg_idx: int) -> str:
+    return f"cfg{global_cfg_idx:04d}"
+
+
+def _append_df(path: Path, df: pd.DataFrame) -> None:
+    if df.empty:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    header = not path.exists()
+    df.to_csv(path, mode="a", header=header, index=False)
+
+
+def _load_completed_cfg_ids(partial_dir: Path) -> set[int]:
+    done_dir = partial_dir / "done_cfgs"
+    if not done_dir.exists():
+        return set()
+    out: set[int] = set()
+    for marker in done_dir.glob("cfg*.done"):
+        m = re.fullmatch(r"cfg(\d+)\.done", marker.name)
+        if m:
+            out.add(int(m.group(1)))
+    return out
+
+
+def _write_cfg_frame(cfg_dir: Path, stem: str, suffix: str, df: pd.DataFrame) -> None:
+    cfg_dir.mkdir(parents=True, exist_ok=True)
+    (cfg_dir / f"{stem}_{suffix}.csv").unlink(missing_ok=True)
+    df.to_csv(cfg_dir / f"{stem}_{suffix}.csv", index=False)
+
+
+def _broad_prefix(dataset: str) -> str:
+    return f"{dataset}_broad_gentle"
+
+
+def _prepare_shared_cache(args) -> Dict[str, str]:
+    import sparsedeepsurv as sds
+    from scipy.sparse import load_npz, save_npz
+    from sklearn.model_selection import ShuffleSplit
+
+    spec = DATASET_SPECS[args.dataset]
+    cache_dir = CACHE_ROOT / args.dataset / f"seed{int(args.seed)}_knn{int(spec['knn_k'])}"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    split_cache = cache_dir / "split_indices.npz"
+    adj_cache = cache_dir / "train_knn_adj.npz"
+
+    if not split_cache.exists():
+        loader_name = spec["loader_name"]
+        data = getattr(sds, loader_name)(args.outdir.resolve())
+        X_train = data["X_train"]
+        strat_key = np.array([f"{e}_{h}" for e, h in zip(data["event_train"], data["histo_train"])])
+        ss = ShuffleSplit(n_splits=1, test_size=0.15, random_state=int(args.seed))
+        i_tr, i_val = next(ss.split(X_train, strat_key))
+        np.savez_compressed(split_cache, i_tr=i_tr, i_val=i_val)
+        print(
+            f"[cache] wrote split cache -> {split_cache} "
+            f"(train={len(i_tr)} val={len(i_val)})",
+            flush=True,
+        )
+    else:
+        with np.load(split_cache) as cached:
+            print(
+                f"[cache] reusing split cache -> {split_cache} "
+                f"(train={len(cached['i_tr'])} val={len(cached['i_val'])})",
+                flush=True,
+            )
+
+    if not adj_cache.exists():
+        loader_name = spec["loader_name"]
+        data = getattr(sds, loader_name)(args.outdir.resolve())
+        with np.load(split_cache) as cached:
+            i_tr = cached["i_tr"]
+        Xt_tr = sds.as_torch(data["X_train"][i_tr])
+        A_train = sds.build_knn_adjacency_csr(
+            Xt_tr, k=int(spec["knn_k"]), pca_dim=50, metric="cosine", symmetrize=True
+        )
+        save_npz(adj_cache, A_train)
+        print(f"[cache] wrote train adjacency cache -> {adj_cache}", flush=True)
+    else:
+        A_train = load_npz(adj_cache)
+        print(
+            f"[cache] reusing train adjacency cache -> {adj_cache} "
+            f"(shape={A_train.shape}, nnz={A_train.nnz})",
+            flush=True,
+        )
+
+    return {
+        "split_cache_npz_str": str(split_cache.resolve()),
+        "adj_cache_npz_str": str(adj_cache.resolve()),
+    }
+
+
+def _read_nonempty_csv(path: Path) -> pd.DataFrame | None:
+    if not path.exists() or path.stat().st_size == 0:
+        return None
+    try:
+        df = pd.read_csv(path)
+    except pd.errors.EmptyDataError:
+        return None
+    return df if not df.empty else None
+
+
+def _load_reference_metric_frames(results_dir: Path, dataset: str, families: set[str] | None) -> Dict[str, pd.DataFrame]:
+    prefix = _broad_prefix(dataset)
+    metric_files = {
+        "run_rows": results_dir / f"{prefix}_runs.csv",
+        "aff_rows": results_dir / f"{prefix}_affinity_pairs.csv",
+        "risk_rows": results_dir / f"{prefix}_risk_pairs.csv",
+        "cluster_rows": results_dir / f"{prefix}_cluster_pairs.csv",
+        "hist_rows": results_dir / f"{prefix}_histology_runs.csv",
+    }
+    out: Dict[str, pd.DataFrame] = {}
+    for key, path in metric_files.items():
+        frame = _read_nonempty_csv(path)
+        if frame is None:
+            continue
+        if families is not None and "model_family" in frame.columns:
+            frame = frame[frame["model_family"].astype(str).isin(families)].copy()
+        if not frame.empty:
+            out[key] = frame
+    return out
+
+
+def _parse_reference_specs(items: List[str]) -> List[tuple[Path, set[str] | None]]:
+    out: List[tuple[Path, set[str] | None]] = []
+    for item in items:
+        if "::" in item:
+            path_str, fam_str = item.split("::", 1)
+            families = {x.strip() for x in fam_str.split(",") if x.strip()}
+            out.append((Path(path_str), families if families else None))
+        else:
+            out.append((Path(item), None))
+    return out
+
+
 def _worker(
     worker_id: int,
     configs: List[Dict],
     *,
     outdir_str: str,
     results_dir_str: str,
+    split_cache_npz_str: str,
+    adj_cache_npz_str: str,
     dataset: str,
     seed: int,
     knn_k: int,
@@ -410,16 +576,20 @@ def _worker(
 ) -> str:
     import sys as _sys
 
-    if _SDS_SRC not in _sys.path:
+    if _SDS_SRC and _SDS_SRC not in _sys.path:
         _sys.path.insert(0, _SDS_SRC)
 
     import sparsedeepsurv as sds
+    from scipy.sparse import load_npz
     from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
-    from sklearn.model_selection import ShuffleSplit
 
     partial_dir = Path(results_dir_str) / f"_partial_worker{worker_id}"
     partial_dir.mkdir(parents=True, exist_ok=True)
     worker_log = partial_dir / "worker.log"
+    cfg_dir = partial_dir / "config_rows"
+    done_dir = partial_dir / "done_cfgs"
+    done_dir.mkdir(parents=True, exist_ok=True)
+    completed_cfg_ids = _load_completed_cfg_ids(partial_dir)
 
     def log(msg: str) -> None:
         print(msg, flush=True)
@@ -430,9 +600,10 @@ def _worker(
     data = getattr(sds, loader_name)(Path(outdir_str).resolve())
     X_train = data["X_train"]
     X_test = data["X_test"]
-    strat_key = np.array([f"{e}_{h}" for e, h in zip(data["event_train"], data["histo_train"])])
-    ss = ShuffleSplit(n_splits=1, test_size=0.15, random_state=seed)
-    i_tr, i_val = next(ss.split(X_train, strat_key))
+    split_cache = np.load(split_cache_npz_str)
+    i_tr = split_cache["i_tr"]
+    i_val = split_cache["i_val"]
+    split_cache.close()
 
     Xt_tr = sds.as_torch(X_train[i_tr])
     Xt_val = sds.as_torch(X_train[i_val])
@@ -444,18 +615,14 @@ def _worker(
     et_val = sds.as_torch(data["event_train"][i_val])
     et_test = sds.as_torch(data["event_test"])
 
-    A_train = sds.build_knn_adjacency_csr(
-        Xt_tr, k=knn_k, pca_dim=50, metric="cosine", symmetrize=True
-    )
-
-    run_rows: List[Dict] = []
-    aff_rows: List[Dict] = []
-    risk_rows: List[Dict] = []
-    cluster_rows: List[Dict] = []
-    hist_rows: List[pd.DataFrame] = []
+    A_train = load_npz(adj_cache_npz_str)
 
     n_cfg = len(configs)
-    log(f"[worker {worker_id}] start dataset={dataset} device={device} n_configs={n_cfg}")
+    log(
+        f"[worker {worker_id}] start dataset={dataset} device={device} "
+        f"n_configs={n_cfg} completed={len(completed_cfg_ids)} "
+        f"split_cache={Path(split_cache_npz_str).name} adj_cache={Path(adj_cache_npz_str).name}"
+    )
     for cfg_i, cfg in enumerate(configs):
         family_label = cfg["model_family"]
         gate_type = cfg["gate_type"]
@@ -473,14 +640,27 @@ def _worker(
         lspin_init_bias = float(cfg["lspin_init_bias"])
         gate_weight_decay = float(cfg["gate_weight_decay"])
         global_cfg_idx = int(cfg["global_cfg_idx"])
+        stem = _cfg_stem(global_cfg_idx)
         cfg_seeds = [int(seed + 10000 * global_cfg_idx + k) for k in range(n_reps)]
+
+        if global_cfg_idx in completed_cfg_ids:
+            log(
+                f"[worker {worker_id}] [{cfg_i + 1}/{n_cfg}] skip completed "
+                f"{family_label} predictor={predictor} cfg={global_cfg_idx}"
+            )
+            continue
 
         t0 = time.time()
         log(
             f"[worker {worker_id}] [{cfg_i + 1}/{n_cfg}] {family_label} predictor={predictor} "
-            f"sigma={gate_sigma:.3g} lambda={lam:.4g} smooth={smooth:.4g}"
+            f"sigma={gate_sigma:.3g} lambda={lam:.4g} smooth={smooth:.4g} cfg={global_cfg_idx}"
         )
 
+        run_rows_cfg: List[Dict] = []
+        aff_rows_cfg: List[Dict] = []
+        risk_rows_cfg: List[Dict] = []
+        cluster_rows_cfg: List[Dict] = []
+        hist_rows_cfg: List[pd.DataFrame] = []
         aff_vecs: List[np.ndarray] = []
         risk_vecs: List[np.ndarray] = []
         cluster_vecs: List[np.ndarray] = []
@@ -527,13 +707,15 @@ def _worker(
             gpars = sds.global_parsimony_metrics(G_hard, freq_threshold=global_freq_threshold)
             risk_vec = sds.model_risk_scores(sds.RiskOnlyWrapper(model).to(device), Xt_test, device=device)
 
-            run_rows.append(
+            run_rows_cfg.append(
                 {
+                    "global_cfg_idx": global_cfg_idx,
                     "model_family": family_label,
                     "gate_type": gate_type,
                     "predictor": predictor,
                     "gate_sigma": gate_sigma,
                     "lambda_sparse": lam,
+                    "lambda_sparse_base": float(cfg.get("lambda_sparse_base", lam)),
                     "lambda_sample_smooth": smooth,
                     "seed": int(s),
                     "run_id": int(run_id),
@@ -555,12 +737,13 @@ def _worker(
                 device=device,
             )
             if len(d_hist):
+                d_hist["global_cfg_idx"] = global_cfg_idx
                 d_hist["model_family"] = family_label
                 d_hist["predictor"] = predictor
                 d_hist["lambda_sparse"] = lam
                 d_hist["lambda_sample_smooth"] = smooth
                 d_hist["seed"] = int(s)
-                hist_rows.append(d_hist)
+                hist_rows_cfg.append(d_hist)
 
             aff_vecs.append(
                 sds.affinity_upper_vec(sds.gate_affinity_matrix(G_hard, normalize="01", zero_diag=True))
@@ -579,14 +762,18 @@ def _worker(
                     "gate_type": gate_type,
                     "predictor": predictor,
                     "lambda_sparse": lam,
+                    "lambda_sparse_base": float(cfg.get("lambda_sparse_base", lam)),
                     "lambda_sample_smooth": smooth,
                     "run_i": i,
                     "run_j": j,
                 }
-                aff_rows.append({**base, "affinity_corr": sds.affinity_corr_from_vec(aff_vecs[i], aff_vecs[j])})
-                risk_rows.append(
+                aff_rows_cfg.append(
+                    {**base, "global_cfg_idx": global_cfg_idx, "affinity_corr": sds.affinity_corr_from_vec(aff_vecs[i], aff_vecs[j])}
+                )
+                risk_rows_cfg.append(
                     {
                         **base,
+                        "global_cfg_idx": global_cfg_idx,
                         "risk_corr": sds.vector_corr(risk_vecs[i], risk_vecs[j]),
                         "top_risk_overlap_ratio": float(hi_stat["overlap_ratio"]),
                         "top_risk_jaccard": float(hi_stat["jaccard"]),
@@ -594,24 +781,39 @@ def _worker(
                         "bottom_risk_jaccard": float(lo_stat["jaccard"]),
                     }
                 )
-                cluster_rows.append(
+                cluster_rows_cfg.append(
                     {
                         **base,
+                        "global_cfg_idx": global_cfg_idx,
                         "cluster_ari": float(adjusted_rand_score(cluster_vecs[i], cluster_vecs[j])),
                         "cluster_nmi": float(normalized_mutual_info_score(cluster_vecs[i], cluster_vecs[j])),
                     }
                 )
 
+        run_df_cfg = pd.DataFrame(run_rows_cfg)
+        aff_df_cfg = pd.DataFrame(aff_rows_cfg)
+        risk_df_cfg = pd.DataFrame(risk_rows_cfg)
+        cluster_df_cfg = pd.DataFrame(cluster_rows_cfg)
+        hist_df_cfg = (
+            pd.concat(hist_rows_cfg, ignore_index=True) if hist_rows_cfg else pd.DataFrame()
+        )
+
+        _write_cfg_frame(cfg_dir, stem, "run_rows", run_df_cfg)
+        _write_cfg_frame(cfg_dir, stem, "aff_rows", aff_df_cfg)
+        _write_cfg_frame(cfg_dir, stem, "risk_rows", risk_df_cfg)
+        _write_cfg_frame(cfg_dir, stem, "cluster_rows", cluster_df_cfg)
+        _write_cfg_frame(cfg_dir, stem, "hist_rows", hist_df_cfg)
+
+        _append_df(partial_dir / "run_rows.csv", run_df_cfg)
+        _append_df(partial_dir / "aff_rows.csv", aff_df_cfg)
+        _append_df(partial_dir / "risk_rows.csv", risk_df_cfg)
+        _append_df(partial_dir / "cluster_rows.csv", cluster_df_cfg)
+        _append_df(partial_dir / "hist_rows.csv", hist_df_cfg)
+
+        (done_dir / f"{stem}.done").write_text("", encoding="utf-8")
+        completed_cfg_ids.add(global_cfg_idx)
         log(f"[worker {worker_id}]   done in {time.time() - t0:.1f}s")
 
-    pd.DataFrame(run_rows).to_csv(partial_dir / "run_rows.csv", index=False)
-    pd.DataFrame(aff_rows).to_csv(partial_dir / "aff_rows.csv", index=False)
-    pd.DataFrame(risk_rows).to_csv(partial_dir / "risk_rows.csv", index=False)
-    pd.DataFrame(cluster_rows).to_csv(partial_dir / "cluster_rows.csv", index=False)
-    if hist_rows:
-        pd.concat(hist_rows, ignore_index=True).to_csv(partial_dir / "hist_rows.csv", index=False)
-    else:
-        pd.DataFrame().to_csv(partial_dir / "hist_rows.csv", index=False)
     log(f"[worker {worker_id}] wrote partial results -> {partial_dir}")
     return str(partial_dir)
 
@@ -628,20 +830,28 @@ def _post_process(results_dir: Path, args) -> None:
         raise FileNotFoundError(f"No partial worker dirs found in {results_dir}")
 
     print(f"[post-process] merging {len(partial_dirs)} partial result dirs", flush=True)
-    def _read_nonempty_csv(path: Path) -> pd.DataFrame | None:
-        if not path.exists() or path.stat().st_size == 0:
-            return None
-        try:
-            df = pd.read_csv(path)
-        except pd.errors.EmptyDataError:
-            return None
-        return df if not df.empty else None
+    def _collect_metric_frames(metric_name: str) -> List[pd.DataFrame]:
+        frames: List[pd.DataFrame] = []
+        for d in partial_dirs:
+            cfg_rows_dir = d / "config_rows"
+            metric_frames: List[pd.DataFrame] = []
+            if cfg_rows_dir.exists():
+                for path in sorted(cfg_rows_dir.glob(f"*_{metric_name}.csv")):
+                    frame = _read_nonempty_csv(path)
+                    if frame is not None:
+                        metric_frames.append(frame)
+            if not metric_frames:
+                frame = _read_nonempty_csv(d / f"{metric_name}.csv")
+                if frame is not None:
+                    metric_frames.append(frame)
+            frames.extend(metric_frames)
+        return frames
 
-    run_frames = [_read_nonempty_csv(d / "run_rows.csv") for d in partial_dirs]
-    aff_frames = [_read_nonempty_csv(d / "aff_rows.csv") for d in partial_dirs]
-    risk_frames = [_read_nonempty_csv(d / "risk_rows.csv") for d in partial_dirs]
-    cluster_frames = [_read_nonempty_csv(d / "cluster_rows.csv") for d in partial_dirs]
-    hist_frames = [_read_nonempty_csv(d / "hist_rows.csv") for d in partial_dirs]
+    run_frames = _collect_metric_frames("run_rows")
+    aff_frames = _collect_metric_frames("aff_rows")
+    risk_frames = _collect_metric_frames("risk_rows")
+    cluster_frames = _collect_metric_frames("cluster_rows")
+    hist_frames = _collect_metric_frames("hist_rows")
 
     run_frames = [f for f in run_frames if f is not None]
     aff_frames = [f for f in aff_frames if f is not None]
@@ -661,7 +871,32 @@ def _post_process(results_dir: Path, args) -> None:
     df_cluster = pd.concat(cluster_frames, ignore_index=True) if cluster_frames else pd.DataFrame()
     df_hist = pd.concat([f for f in hist_frames if not f.empty], ignore_index=True) if hist_frames else pd.DataFrame()
 
-    prefix = f"{args.dataset}_broad_gentle"
+    ref_specs: List[tuple[Path, set[str] | None]] = []
+    ref_specs.extend((p, set(args.reference_families) if args.reference_families else None) for p in args.reference_results_dir)
+    ref_specs.extend(_parse_reference_specs(args.reference_spec))
+    for ref_dir, ref_families in ref_specs:
+        ref_dir = ref_dir.resolve()
+        ref_frames = _load_reference_metric_frames(ref_dir, args.dataset, ref_families)
+        if not ref_frames:
+            print(f"[post-process] no reference broad outputs found in {ref_dir}", flush=True)
+            continue
+        print(
+            f"[post-process] merging reference results from {ref_dir}"
+            + (f" families={sorted(ref_families)}" if ref_families else ""),
+            flush=True,
+        )
+        if "run_rows" in ref_frames:
+            df_runs = pd.concat([df_runs, ref_frames["run_rows"]], ignore_index=True)
+        if "aff_rows" in ref_frames:
+            df_aff = pd.concat([df_aff, ref_frames["aff_rows"]], ignore_index=True)
+        if "risk_rows" in ref_frames:
+            df_risk = pd.concat([df_risk, ref_frames["risk_rows"]], ignore_index=True)
+        if "cluster_rows" in ref_frames:
+            df_cluster = pd.concat([df_cluster, ref_frames["cluster_rows"]], ignore_index=True)
+        if "hist_rows" in ref_frames:
+            df_hist = pd.concat([df_hist, ref_frames["hist_rows"]], ignore_index=True)
+
+    prefix = _broad_prefix(args.dataset)
     df_runs.to_csv(results_dir / f"{prefix}_runs.csv", index=False)
     df_aff.to_csv(results_dir / f"{prefix}_affinity_pairs.csv", index=False)
     df_risk.to_csv(results_dir / f"{prefix}_risk_pairs.csv", index=False)
@@ -745,6 +980,76 @@ def _parse() -> argparse.Namespace:
     p.add_argument("--dataset", choices=["kipan", "brca"], required=True)
     p.add_argument("--outdir", type=Path, default=None)
     p.add_argument("--results-dir", type=Path, default=None)
+    p.add_argument("--families", nargs="+", default=None, choices=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"])
+    p.add_argument(
+        "--smooth-lambda-scale-families",
+        nargs="+",
+        default=[],
+        choices=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"],
+        help="Families whose smoothed (lambda_sample_smooth > 0) configs should use scaled-up lambda_sparse.",
+    )
+    p.add_argument(
+        "--smooth-lambda-scale",
+        type=float,
+        default=1.0,
+        help="Multiplier applied to lambda_sparse only for smoothed configs in --smooth-lambda-scale-families.",
+    )
+    p.add_argument(
+        "--sample-smooth-grid",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Optional override for sample smoothing values. 0.0 is auto-included for no-smooth.",
+    )
+    p.add_argument(
+        "--lspin-nosmooth-lambdas",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Optional override lambda grid for LSPIN at lambda_sample_smooth=0.",
+    )
+    p.add_argument(
+        "--lspin-smooth-lambdas",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Optional override lambda grid for LSPIN at lambda_sample_smooth>0. "
+             "If omitted while --lspin-nosmooth-lambdas is set, the no-smooth grid is reused for smooth points.",
+    )
+    p.add_argument(
+        "--lspin-sigmas",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Optional override sigma grid for LSPIN/L-LSPIN families.",
+    )
+    p.add_argument(
+        "--nosmooth-lambdas",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Optional override lambda grid at lambda_sample_smooth=0 for all selected families.",
+    )
+    p.add_argument(
+        "--smooth-lambdas",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Optional override lambda grid at lambda_sample_smooth>0 for all selected families. "
+             "If omitted with --nosmooth-lambdas, the no-smooth grid is reused.",
+    )
+    p.add_argument(
+        "--patience-override",
+        type=int,
+        default=None,
+        help="Optional early-stopping patience override applied to selected families/configs.",
+    )
+    p.add_argument(
+        "--lr-override",
+        type=float,
+        default=None,
+        help="Optional learning-rate override applied to selected families/configs.",
+    )
     p.add_argument("--gpus", type=int, nargs="+", default=[0, 2, 4, 6])
     p.add_argument("--seed", type=int, default=123)
     p.add_argument("--n-reps", type=int, default=8)
@@ -757,6 +1062,27 @@ def _parse() -> argparse.Namespace:
     p.add_argument("--plot-x-min", type=float, default=None)
     p.add_argument("--plot-x-max", type=float, default=None)
     p.add_argument("--lowess-frac", type=float, default=0.55)
+    p.add_argument(
+        "--reference-results-dir",
+        type=Path,
+        nargs="*",
+        default=[],
+        help="Completed broad run dirs whose CSV outputs should be merged in during post-processing.",
+    )
+    p.add_argument(
+        "--reference-families",
+        nargs="+",
+        default=None,
+        choices=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"],
+        help="Optional family filter applied when merging --reference-results-dir outputs.",
+    )
+    p.add_argument(
+        "--reference-spec",
+        action="append",
+        default=[],
+        help="Per-reference merge spec of the form '/path/to/run::Family1,Family2'. "
+             "If no ::family list is given, all families from that reference are merged.",
+    )
     p.add_argument("--post-process-only", action="store_true")
     args = p.parse_args()
     spec = DATASET_SPECS[args.dataset]
@@ -803,6 +1129,7 @@ def main() -> None:
         return
 
     all_configs = _build_configs(args)
+    cache_kwargs = _prepare_shared_cache(args)
     gpus = args.gpus
     n_workers = len(gpus)
     batches: List[List[Dict]] = [[] for _ in range(n_workers)]
@@ -814,6 +1141,14 @@ def main() -> None:
         f"{n_workers} workers on GPUs {gpus}",
         flush=True,
     )
+    if args.families:
+        print(f"[ch3_broad_gentle] restricted families: {args.families}", flush=True)
+    if args.smooth_lambda_scale_families and float(args.smooth_lambda_scale) != 1.0:
+        print(
+            f"[ch3_broad_gentle] scaling smoothed lambda_sparse by {args.smooth_lambda_scale:g} "
+            f"for families {args.smooth_lambda_scale_families}",
+            flush=True,
+        )
     for i, (gpu, batch) in enumerate(zip(gpus, batches)):
         print(f"  worker {i}: GPU cuda:{gpu}, {len(batch)} configs", flush=True)
 
@@ -831,6 +1166,7 @@ def main() -> None:
         risk_top_frac=args.risk_top_frac,
         cluster_n_clusters=int(spec["cluster_n_clusters"]),
         global_freq_threshold=args.global_freq_threshold,
+        **cache_kwargs,
     )
 
     t_start = time.time()

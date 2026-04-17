@@ -72,6 +72,7 @@ def _worker(
     from _paths import ensure_repo_imports as _ensure_repo_imports
     _ensure_repo_imports()
 
+    import sys
     import numpy as np
     import pandas as pd
     from pathlib import Path
@@ -82,7 +83,7 @@ def _worker(
 
     _partial_dir = Path(results_dir_str) / f"_partial_worker{worker_id}"
     _partial_dir.mkdir(parents=True, exist_ok=True)
-    _log = open(_partial_dir / "worker.log", "w", buffering=1)
+    _log = open(_partial_dir / "worker.log", "a", buffering=1)
 
     class _WorkerTee:
         def __init__(self, orig, log):
@@ -94,7 +95,18 @@ def _worker(
         def fileno(self):
             return self._orig.fileno()
 
-    _sys.stdout = _WorkerTee(_sys.stdout, _log)
+    sys.stdout = _WorkerTee(sys.stdout, _log)
+
+    # ── Resume: discover already-completed configs ─────────────────────────────
+    def _cfg_dir(cfg_idx: int) -> Path:
+        return _partial_dir / f"cfg_{cfg_idx:05d}"
+
+    def _cfg_done(cfg_idx: int) -> bool:
+        return (_cfg_dir(cfg_idx) / "done").exists()
+
+    def _load_cfg_rows(cfg_idx: int, name: str) -> "Optional[pd.DataFrame]":
+        p = _cfg_dir(cfg_idx) / f"{name}.csv"
+        return pd.read_csv(p) if p.exists() else None
 
     # Load BRCA data fresh in this worker
     data = sds.load_brca_split_artifacts(Path(outdir_str).resolve())
@@ -123,15 +135,36 @@ def _worker(
     cluster_rows: List[Dict] = []
     hist_rows:    List[pd.DataFrame] = []
 
+    # Pre-load already-completed configs
+    n_skipped = 0
+    for cfg in configs:
+        idx = cfg["global_cfg_idx"]
+        if _cfg_done(idx):
+            for name, target in [("run_rows", run_rows), ("aff_rows", aff_rows),
+                                  ("risk_rows", risk_rows), ("cluster_rows", cluster_rows)]:
+                df = _load_cfg_rows(idx, name)
+                if df is not None and not df.empty:
+                    target.extend(df.to_dict("records"))
+            df_h = _load_cfg_rows(idx, "hist_rows")
+            if df_h is not None and not df_h.empty:
+                hist_rows.append(df_h)
+            n_skipped += 1
+    if n_skipped:
+        print(f"[worker {worker_id}] resuming: skipping {n_skipped}/{len(configs)} already-done configs", flush=True)
+
     n_cfg = len(configs)
     for cfg_i, cfg in enumerate(configs):
+        cfg_idx      = cfg["global_cfg_idx"]
+        if _cfg_done(cfg_idx):
+            continue
+
         family_label = cfg["family_label"]
         gate_type    = cfg["gate_type"]
         gate_sigma   = lspin_gate_sigma if family_label == "LSPIN" else concrete_gate_sigma
         temperature  = lspin_temperature if family_label == "LSPIN" else concrete_temperature
         lam          = float(cfg["lam"])
         smooth       = float(cfg["smooth"])
-        cfg_seeds    = [int(seed + 10000 * cfg["global_cfg_idx"] + k) for k in range(n_reps)]
+        cfg_seeds    = [int(seed + 10000 * cfg_idx + k) for k in range(n_reps)]
 
         t0 = time.time()
         print(f"[worker {worker_id}] [{cfg_i + 1}/{n_cfg}] {family_label} "
@@ -140,6 +173,11 @@ def _worker(
         aff_vecs:     List[np.ndarray] = []
         risk_vecs:    List[np.ndarray] = []
         cluster_vecs: List[np.ndarray] = []
+        cfg_run_rows:     List[Dict] = []
+        cfg_aff_rows:     List[Dict] = []
+        cfg_risk_rows:    List[Dict] = []
+        cfg_cluster_rows: List[Dict] = []
+        cfg_hist_rows:    List[pd.DataFrame] = []
 
         for run_id, s in enumerate(cfg_seeds):
             sds.set_all_seeds(s)
@@ -176,7 +214,7 @@ def _worker(
             gpars = sds.global_parsimony_metrics(G_hard, freq_threshold=global_freq_threshold)
             risk_vec = sds.model_risk_scores(sds.RiskOnlyWrapper(model).to(device), Xt_test, device=device)
 
-            run_rows.append({
+            cfg_run_rows.append({
                 "model_family": family_label,
                 "gate_type":    gate_type,
                 "gate_sigma":   gate_sigma,
@@ -201,7 +239,7 @@ def _worker(
                 d_hist["lambda_sparse"]        = lam
                 d_hist["lambda_sample_smooth"] = smooth
                 d_hist["seed"]                 = int(s)
-                hist_rows.append(d_hist)
+                cfg_hist_rows.append(d_hist)
 
             aff_vecs.append(sds.affinity_upper_vec(sds.gate_affinity_matrix(G_hard, normalize="01", zero_diag=True)))
             risk_vecs.append(risk_vec.astype(np.float32))
@@ -218,8 +256,8 @@ def _worker(
                     "lambda_sparse": lam, "lambda_sample_smooth": smooth,
                     "run_i": i, "run_j": j,
                 }
-                aff_rows.append({**base, "affinity_corr": sds.affinity_corr_from_vec(aff_vecs[i], aff_vecs[j])})
-                risk_rows.append({
+                cfg_aff_rows.append({**base, "affinity_corr": sds.affinity_corr_from_vec(aff_vecs[i], aff_vecs[j])})
+                cfg_risk_rows.append({
                     **base,
                     "risk_corr": sds.vector_corr(risk_vecs[i], risk_vecs[j]),
                     "top_risk_overlap_ratio":    float(hi_stat["overlap_ratio"]),
@@ -227,13 +265,33 @@ def _worker(
                     "bottom_risk_overlap_ratio": float(lo_stat["overlap_ratio"]),
                     "bottom_risk_jaccard":       float(lo_stat["jaccard"]),
                 })
-                cluster_rows.append({
+                cfg_cluster_rows.append({
                     **base,
                     "cluster_ari": float(adjusted_rand_score(cluster_vecs[i], cluster_vecs[j])),
                     "cluster_nmi": float(normalized_mutual_info_score(cluster_vecs[i], cluster_vecs[j])),
                 })
 
-        print(f"[worker {worker_id}]   done in {time.time() - t0:.1f}s", flush=True)
+        # ── Per-config checkpoint ──────────────────────────────────────────────
+        cd = _cfg_dir(cfg_idx)
+        cd.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(cfg_run_rows).to_csv(cd / "run_rows.csv", index=False)
+        pd.DataFrame(cfg_aff_rows).to_csv(cd / "aff_rows.csv", index=False)
+        pd.DataFrame(cfg_risk_rows).to_csv(cd / "risk_rows.csv", index=False)
+        pd.DataFrame(cfg_cluster_rows).to_csv(cd / "cluster_rows.csv", index=False)
+        if cfg_hist_rows:
+            pd.concat(cfg_hist_rows, ignore_index=True).to_csv(cd / "hist_rows.csv", index=False)
+        else:
+            pd.DataFrame().to_csv(cd / "hist_rows.csv", index=False)
+        (cd / "done").touch()
+
+        # Accumulate into worker-level lists
+        run_rows.extend(cfg_run_rows)
+        aff_rows.extend(cfg_aff_rows)
+        risk_rows.extend(cfg_risk_rows)
+        cluster_rows.extend(cfg_cluster_rows)
+        hist_rows.extend(cfg_hist_rows)
+
+        print(f"[worker {worker_id}]   done in {time.time() - t0:.1f}s  (checkpoint saved)", flush=True)
 
     partial_dir = Path(results_dir_str) / f"_partial_worker{worker_id}"
     partial_dir.mkdir(parents=True, exist_ok=True)
