@@ -1,0 +1,9 @@
+config,n_patients,observed_runs,expected_runs_random,permutation_mean,permutation_sd,p_value
+lspin_nosmooth,259,28,137.4,137.4,7.0,9.99990000099999e-06
+lspin_smooth,259,47,137.4,137.4,7.0,9.99990000099999e-06
+concrete_nosmooth,259,37,137.4,137.4,7.0,9.99990000099999e-06
+concrete_smooth,259,27,137.4,137.4,7.0,9.99990000099999e-06
+llspin_nosmooth,259,28,137.4,137.4,7.0,9.99990000099999e-06
+llspin_smooth,259,35,137.4,137.4,7.0,9.99990000099999e-06
+lconcrete_nosmooth,259,28,137.4,137.4,7.0,9.99990000099999e-06
+lconcrete_smooth,259,28,137.4,137.4,7.0,9.99990000099999e-06

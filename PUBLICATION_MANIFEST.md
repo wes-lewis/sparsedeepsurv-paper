@@ -104,12 +104,15 @@ Representative preserved outputs in each dataset subdirectory include:
 - `notebook_style_models_cluster_summary.csv`
 - `fig_selected_stability_metrics_with_cindex_boxplot*.png`
 - `fig_gate_heatmap_*.png`
+- `heatmap_sample_order_*.csv` (clustering-induced patient order + histology label per row, used by `histology_runs_test.py`)
+- `histology_runs_test_summary.csv` (KIPAN only; observed/expected run counts and permutation p-values quantifying histology alignment of the gate-matrix clustering order)
 
 Main regeneration entry points:
 
 - `analyses/render_adaptive_manuscript_figures.py`
 - `analyses/plot_kipan_boxplots.py`
 - `analyses/rerender_boxplots.py`
+- `analyses/histology_runs_test.py`
 
 Main rerun entry points:
 
