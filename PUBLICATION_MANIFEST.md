@@ -127,12 +127,20 @@ Nested canonical probe-analysis directories include:
 
 - `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan/linear_gated_probe_kipan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
 - `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/pancan/linear_gated_probe_pancan_full_more_sparse_allfamilies_lamx3_3fold_2rep`
+- `data/runs/adaptive_gentle_all_kipan_brca_pancan_20260408_193020/kipan/patient_subset_within_vs_outside_kipan_3fold_2rep`
 
 These directories are the canonical source for:
 
 - gated-vs-random signal summaries
 - patient-subset predictivity summaries
 - recurrent-gene tables and related recurrence summaries
+- within-vs-outside subset signal summaries (KIPAN only): per hard-selected
+  gene, Cox signal within its selecting patient subset vs. among the
+  complementary held-out patients who did not select it, testing whether
+  gating carries subset-specific information beyond what comparing against
+  random genes on the same subset can show (that comparison alone cannot
+  produce a negative result, since genes are selected using the same
+  cohort's own outcome)
 
 Main regeneration entry points:
 
@@ -141,6 +149,7 @@ Main regeneration entry points:
 - `analyses/plot_pancan_gated_univariate_bias.py`
 - `analyses/plot_kipan_gated_univariate_dotplot.py`
 - `analyses/plot_kipan_feature_set_cv_transport.py`
+- `analyses/patient_subset_within_vs_outside_test.py`
 
 ## 3. Broad sweeps
 
