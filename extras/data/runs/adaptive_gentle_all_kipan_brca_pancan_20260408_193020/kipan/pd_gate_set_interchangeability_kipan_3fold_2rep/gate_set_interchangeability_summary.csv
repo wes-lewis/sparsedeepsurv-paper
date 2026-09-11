@@ -1,0 +1,3 @@
+family,selection,n_subgroup_rows,own_minus_global_n,own_minus_global_frac_positive,own_minus_global_median,own_minus_global_wilcoxon_p_greater,own_minus_foreign_n,own_minus_foreign_frac_positive,own_minus_foreign_median,own_minus_foreign_wilcoxon_p_greater,own_minus_random_n,own_minus_random_frac_positive,own_minus_random_median,own_minus_random_wilcoxon_p_greater
+Concrete,smooth,15,15,0.5333333333333333,0.002277472006073311,0.4451904296875,15,0.6,0.005503890681343715,0.29974365234375,15,0.6,0.016902598774561572,0.4234619140625
+LSPIN,smooth,18,18,0.6111111111111112,0.025454305287171408,0.08367538452148438,18,0.3888888888888889,-0.00918676258546186,0.782621914120784,18,0.5555555555555556,0.010751140648054991,0.31984710693359375
