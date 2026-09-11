@@ -1,0 +1,4 @@
+method,precision_mean,recall_mean,jaccard_mean
+Concrete_smooth,0.0,0.0,0.0
+LSPIN_smooth,0.0006800741579882261,0.03125,0.000667318828263185
+coxnet_global_matched_k371,0.0013927576601671311,0.0625,0.001366120218579235
