@@ -37,29 +37,43 @@ somewhere may surface a new thread worth adding.
 
 ## Priority order (reassess after each result)
 
-1. `wes/pd-transport-noninterchangeability` — builds directly on existing
-   scripts (`plot_kipan_feature_set_cv_transport.py`,
-   `patient_subset_within_vs_outside_test.py`); cheapest path to a positive
-   personalization result.
-2. `wes/pd-selection-stability-index` — reframes the existing "overlap
-   above chance" finding using a proper corrected-for-chance stability
-   index instead of an informal percentage.
-3. `wes/pd-biological-validation` — reanalysis of existing canonical runs
-   (`extras/data/runs/adaptive/`) plus the tracked Hallmark gene sets; no
-   new training required.
-4. `wes/pd-noise-robustness` — cheap synthetic column augmentation on
-   existing KIPAN/BRCA matrices; directly tests the "sparsity generalizes
-   better" claim.
-5. `wes/pd-synthetic-ground-truth` — heavier to build (needs a semi-
-   synthetic hazard-generation harness) but the single most convincing
-   thing available: proves personalization does something a global sparse
-   model cannot, with ground truth to check against.
-6. `wes/pd-small-sample-learning-curves` — straightforward to run, tests
-   the n<<p generalization-advantage claim directly.
-7. `wes/pd-external-cohort-transfer` — highest narrative payoff for
-   "sparsity generalizes" but gated on getting a usable second cohort
-   (Desmedt microarray set is the nearest candidate; UK Biobank needs a
-   formal data-access application, flagged as a known blocker already).
+**Updated 2026-09-11 after first real runs** (see reassessment log below
+for full numbers). All priorities below are provisional pending the
+follow-up steps listed at the end of the 2026-09-11 reassessment entry —
+none of threads 1-6 has yet returned a result that would justify
+promoting anything into the manuscript as-is.
+
+1. `wes/pd-selection-stability-index` — **run**; the most decisive result
+   so far (gated stability indistinguishable from chance, a plain Coxnet
+   baseline far more stable). Re-run next with lambda chosen to maximize
+   stability rather than C-index, to test whether this is a
+   hyperparameter artifact before concluding anything structural.
+2. `wes/pd-small-sample-learning-curves` — **run**; Coxnet had the
+   smallest generalization gap at low training fractions on both
+   datasets. Same re-tuning follow-up as thread 2.
+3. `wes/pd-transport-noninterchangeability` — **run**, underpowered
+   (n=15-20 paired observations); increase folds/reps before treating
+   the current null as conclusive.
+4. `wes/pd-synthetic-ground-truth` — **run** at one effect-size setting,
+   which turned out too hard for any method to solve (near-zero
+   precision/recall across the board including baselines). Needs an
+   effect-size/sparsity sweep before it can discriminate methods; once
+   that's done this is still the most informative thread, since it is
+   the only one with ground truth to check against.
+5. `wes/pd-noise-robustness` — **run**, underpowered (n_reps=3); no
+   signal detected yet either way.
+6. `wes/pd-biological-validation` — **run**; nominally promising
+   pathway-enrichment directions (Coagulation, Complement, TGF-beta) but
+   nothing survived multiple-testing correction, and subgroup survival
+   separation was not significant. Most likely candidate for a positive
+   result with more data/subgroup-count tuning, least likely to be
+   undercut by the "hyperparameters tuned for the wrong property"
+   explanation that threads 1/2/6 point to.
+7. `wes/pd-external-cohort-transfer` — **last priority, confirmed
+   2026-09-11**: UK Biobank is not happening; restricted to public,
+   no-application-required data only (Desmedt microarray is the sole
+   current candidate). Held back until 1-6 clarify whether there is a
+   personalization/sparsity advantage worth externally validating.
 
 ## Threads
 
@@ -74,8 +88,15 @@ somewhere may surface a new thread worth adding.
   another patient's/subgroup's gate set, (c) a random same-size set,
   evaluated on that patient's held-out outcome. Scaffold added at
   `extras/analyses/pd_gate_set_interchangeability_test.py`.
-- **Status**: scaffolded, not yet run.
-- **Result**: _pending_
+- **Status**: implemented and run (3-fold, 2-rep) on KIPAN and BRCA,
+  both LSPIN and Concrete, `smooth` selection. Outputs at
+  `<run_dir>/{kipan,brca}/pd_gate_set_interchangeability_{dataset}_3fold_2rep/`.
+- **Result**: no significant own-vs-global or own-vs-foreign advantage on
+  either dataset (best case KIPAN LSPIN own-vs-global: 61% positive,
+  median +0.025, p=0.084; own-vs-foreign was *negative* on both datasets
+  for LSPIN). n=15-20 paired subgroup observations per cell — underpowered,
+  not a settled null. Next: rerun with more folds/reps for power before
+  concluding.
 
 ### 2. Formal feature-selection stability index
 - **Branch**: `wes/pd-selection-stability-index`
@@ -87,8 +108,18 @@ somewhere may surface a new thread worth adding.
   across the existing bootstrap/rerun gate matrices, for LSPIN/Concrete vs.
   Lasso-Cox/elastic-net-Cox baselines. Scaffold added at
   `extras/analyses/pd_selection_stability_index.py`.
-- **Status**: scaffolded, not yet run.
-- **Result**: _pending_
+- **Status**: implemented and run (15 bootstrap resamples) on KIPAN and
+  BRCA, both LSPIN and Concrete. Outputs at
+  `<run_dir>/{kipan,brca}/pd_selection_stability_{dataset}_{family}_smooth_15boot/`.
+- **Result**: the most decisive finding of this round. Gated stability
+  (0.001-0.025) was indistinguishable from a random-selection null
+  (-0.001-0.0002) on every (dataset, family) combination; a
+  sparsity-matched Coxnet baseline was far more stable (0.16-0.22, CIs
+  non-overlapping with the gated methods'). As currently tuned, LSPIN/
+  Concrete selection is not more reproducible than chance at the
+  aggregate level. Next: re-run with a lambda chosen to maximize
+  stability rather than the C-index-selected value, to separate "gating
+  can't be stable" from "these hyperparameters weren't tuned for it."
 
 ### 3. Biological / clinical validation of personalized subgroups
 - **Branch**: `wes/pd-biological-validation`
@@ -101,8 +132,21 @@ somewhere may surface a new thread worth adding.
   enrichment comparison across subgroups using the already-tracked
   `data/gene_sets/enrichr/MSigDB_Hallmark_2020.gmt`. Scaffold added at
   `extras/analyses/pd_subgroup_biological_validation.py`.
-- **Status**: scaffolded, not yet run.
-- **Result**: _pending_
+- **Status**: implemented and run for KIPAN LSPIN and BRCA LSPIN (single
+  clustering pass each, `n-clusters=4`). Outputs at
+  `<run_dir>/{kipan,brca}/pd_subgroup_biological_validation_{dataset}_lspin_smooth/`.
+- **Result**: KIPAN formed 3 usable subgroups (n=255) with no significant
+  survival separation beyond histology (log-rank p=0.41, Cox LR p=0.76).
+  BRCA's default clustering cut did not yield multiple subgroups large
+  enough to test at all. Hallmark enrichment surfaced plausible
+  candidates (Coagulation, Complement, Protein Secretion, TGF-beta
+  Signaling — all biologically sensible for kidney/breast cancer) at
+  nominal p<0.05, but none survived BH correction (best q~0.07). Most
+  promising thread for a future positive result (directionally
+  plausible, not yet an artifact of an obviously wrong hyperparameter
+  choice like threads 1/2/6) but not yet supportable as a claim. Next:
+  try other cluster counts and, for BRCA, a clustering cut that actually
+  separates the test set.
 
 ### 4. Noise-robustness / generalization-under-irrelevant-features test
 - **Branch**: `wes/pd-noise-robustness`
@@ -114,8 +158,15 @@ somewhere may surface a new thread worth adding.
   0/50/200/1000) to existing KIPAN/BRCA matrices; compare held-out C-index
   degradation of dense MLP vs. gated-sparse models. Scaffold added at
   `extras/analyses/pd_noise_robustness_sweep.py`.
-- **Status**: scaffolded, not yet run.
-- **Result**: _pending_
+- **Status**: implemented and run (3 reps, noise_k in {0, 200, 1000}) on
+  KIPAN and BRCA, LSPIN and Concrete vs. dense MLP (MLP+STG deferred —
+  bespoke training loop not yet ported). Outputs at
+  `<run_dir>/{kipan,brca}/pd_noise_robustness_{dataset}_3rep/`.
+- **Result**: no clear robustness advantage detected for either gated
+  family on either dataset; effect sizes were small relative to
+  run-to-run std at only 3 reps (e.g. KIPAN LSPIN degraded slightly more
+  than dense MLP as noise grew). Underpowered — "no signal detected yet,"
+  not "no effect." Next: more reps before drawing a conclusion either way.
 
 ### 5. Semi-synthetic ground-truth recovery
 - **Branch**: `wes/pd-synthetic-ground-truth`
@@ -129,9 +180,20 @@ somewhere may surface a new thread worth adding.
   features per patient, benchmarked against Lasso-Cox and a single global
   sparse MLP. Scaffold added at
   `extras/analyses/pd_synthetic_ground_truth_recovery.py`.
-- **Status**: scaffolded, not yet run. Heaviest-lift thread — needs a
-  design pass on the hazard-generation harness before running.
-- **Result**: _pending_
+- **Status**: implemented and run at one effect-size/sparsity setting
+  (effect_size=1.5, 8 true genes/subgroup, 4 synthetic subgroups) on
+  KIPAN and BRCA. Outputs at
+  `<run_dir>/{kipan,brca}/pd_synthetic_ground_truth_{dataset}/`.
+- **Result**: the setting run was too hard for any method to solve —
+  precision/recall/Jaccard were near zero for LSPIN, Concrete, *and* the
+  Coxnet global baseline (e.g. BRCA: all three <0.0015 mean precision),
+  and sanity-check C-index on the synthetic outcome was barely above
+  chance (0.55-0.70). This experiment cannot yet discriminate methods.
+  Next (required before this thread means anything): sweep effect size
+  and/or reduce the true-feature search space (fewer total genes, or
+  more true features per subgroup) so at least the strongest baseline
+  clears a reasonable C-index on the synthetic outcome, then compare
+  recovery quality at that setting.
 
 ### 6. Small-sample / high-dimensional learning curves
 - **Branch**: `wes/pd-small-sample-learning-curves`
@@ -143,23 +205,44 @@ somewhere may surface a new thread worth adding.
   train-minus-held-out C-index generalization gap for gated-sparse vs.
   dense MLP vs. Lasso-Cox. Scaffold added at
   `extras/analyses/pd_small_sample_learning_curves.py`.
-- **Status**: scaffolded, not yet run.
-- **Result**: _pending_
+- **Status**: implemented and run (3 reps, fractions {0.25, 0.5, 0.75,
+  1.0}) on KIPAN and BRCA, LSPIN and Concrete vs. dense MLP vs. Coxnet
+  (MLP+STG deferred as in thread 4). Outputs at
+  `<run_dir>/{kipan,brca}/pd_small_sample_learning_curves_{dataset}_3rep/`.
+- **Result**: Coxnet (sparse linear) had the smallest generalization gap
+  at low training fractions on *both* datasets (e.g. BRCA at 25% data:
+  Coxnet gap 0.327 vs. LSPIN 0.437 — the worst of the four — Concrete
+  0.397, dense MLP 0.414). Neither gated family showed a sample-
+  efficiency edge over the dense MLP baseline on either dataset. Same
+  re-tuning follow-up as thread 2: rerun with lambda chosen for sample
+  efficiency rather than C-index before treating this as structural.
 
-### 7. External-cohort transfer
+### 7. External-cohort transfer (LAST priority, public data only)
 - **Branch**: `wes/pd-external-cohort-transfer`
 - **Claim targeted**: gate-selected feature sets transport better than a
   dense model's full feature set under real batch/platform shift.
 - **Precedent**: standard external-validation pattern for genomic
   prognostic signatures.
-- **Next step**: use the already-integrated Desmedt breast microarray
-  cohort (see `sparsedeepsurv` tutorial) as the nearest available external
-  BRCA target; train/select in-cohort, retrain a downstream model on the
-  frozen selected feature set, evaluate on Desmedt. UK Biobank or other
-  external cohorts remain a longer-term option pending data-access
-  applications (known blocker, see `COLLABORATOR_GUIDE.md`). Scaffold
-  added at `extras/analyses/pd_external_cohort_transfer.py`.
-- **Status**: scaffolded, not yet run.
+- **Data constraint (2026-09-11 decision)**: UK Biobank is off the table
+  -- it is not happening. This thread is restricted to cohorts that are
+  publicly downloadable without an application/access process. The only
+  candidate currently identified is the Desmedt breast microarray cohort
+  already integrated in the `sparsedeepsurv` tutorial (GEO-derived, no
+  application required). If Desmedt turns out too small or too poorly
+  matched in mapped features to produce a meaningful comparison, this
+  thread stops there rather than pursuing any access-gated dataset --
+  do not substitute another restricted-access cohort as a workaround.
+- **Next step**: train/select in-cohort on TCGA BRCA, freeze the
+  consensus gate-selected feature set, map it onto the Desmedt GPL96
+  platform (reusing the mygene-based probe mapping already built for the
+  tutorial), retrain a downstream model on the frozen feature set, and
+  evaluate on Desmedt against a size-matched dense-model comparison set.
+  Scaffold at `extras/analyses/pd_external_cohort_transfer.py`.
+- **Status**: scaffolded only, explicitly deferred until threads 1-6 are
+  further along -- this is now confirmed last in priority order, both
+  because it is the most data-constrained thread and because the
+  2026-09-11 results below make it more important to first decide
+  whether the underlying method has a claim worth externally validating.
 - **Result**: _pending_
 
 ## Reassessment log
@@ -167,4 +250,98 @@ somewhere may surface a new thread worth adding.
 Add a dated entry here each time a thread produces a result and priorities
 are revisited.
 
-- 2026-09-11: Plan created; all seven threads scaffolded, none yet run.
+- 2026-09-11 (plan created): All seven threads scaffolded, none yet run.
+
+- 2026-09-11 (threads 1, 2, 3, 4, 5, 6 run at real, if modest, scale):
+  Implemented and executed all six threads against real KIPAN/BRCA data
+  (thread 7 held back per the data-access restriction above). Reporting
+  the results plainly rather than the outcome that was hoped for going
+  in: **none of the six threads found a clear, statistically supported
+  advantage for personalized/sparse gating over standard baselines at
+  the scale run so far.** Specifics, so this doesn't get summarized away:
+
+  - **Thread 1 (transport/non-interchangeability)**: own-vs-global
+    C-index differences were not significant for either family on either
+    dataset (KIPAN LSPIN: 61% of subgroups favored "own" over "global",
+    median +0.025, Wilcoxon p=0.084; KIPAN Concrete: p=0.30; BRCA LSPIN:
+    p=0.45; BRCA Concrete: p=0.78). Own-vs-*foreign* subgroup sets were
+    directionally *worse* for LSPIN on both datasets (39% and 35% of
+    subgroups favored "own"). n was small (15-20 paired subgroup
+    observations per family/dataset from a 3-fold/2-rep run) -- this is
+    underpowered, not necessarily a true null, but as run it does not
+    support the non-interchangeability claim.
+  - **Thread 2 (stability index)**: this is the most decisive result.
+    Nogueira-Brown stability of LSPIN/Concrete hard-selection across 15
+    bootstrap resamples was indistinguishable from a random-selection
+    baseline of matched size on both datasets (KIPAN LSPIN: 0.0017 vs.
+    random 0.0002; KIPAN Concrete: 0.025 vs. -0.001; BRCA LSPIN: 0.0010
+    vs. -0.0005; BRCA Concrete: 0.0051 vs. 0.0006 -- all with heavily
+    overlapping CIs). A plain elastic-net Cox (Coxnet, sparsity-matched)
+    was *far* more stable on every comparison (0.16-0.22, with
+    non-overlapping CIs vs. the gated methods). This directly
+    contradicts the "more repeated, less interchangeable selection"
+    hope from the original question -- as currently tuned, the gated
+    deep models are not more reproducible than chance at the aggregate
+    selection-set level, while the boring linear baseline is.
+  - **Thread 3 (biological validation)**: KIPAN gate-cluster subgroups
+    showed no significant survival separation beyond histology
+    (log-rank p=0.41, Cox LR p=0.76 across 3 subgroups, n=255). BRCA
+    clustering did not even yield multiple subgroups large enough to
+    test (n_groups=1 at the default clustering cut). Hallmark pathway
+    enrichment per subgroup had several nominal p<0.05 pathways
+    (Coagulation, Complement, Protein Secretion, TGF-beta Signaling) but
+    none survived BH correction (best q~0.07). Directionally plausible,
+    not yet a supportable claim.
+  - **Thread 4 (noise robustness)**: no clear robustness advantage for
+    gated models under injected noise columns; effect sizes were small
+    relative to run-to-run std at n_reps=3 (e.g. KIPAN LSPIN degraded
+    slightly more than dense MLP as noise increased, -0.009 vs. -0.00002
+    delta at k=1000; BRCA showed small positive deltas for both gated
+    families but well within noise). Underpowered at 3 reps; the honest
+    read is "no signal detected yet," not "no effect exists."
+  - **Thread 5 (synthetic ground-truth recovery)**: at the one
+    effect-size/sparsity setting run, precision/recall/Jaccard of
+    selected-vs-true features were near zero for *all* methods
+    including the Coxnet global baseline (e.g. BRCA: all three methods'
+    mean precision <0.0015), and sanity-check C-index on the synthetic
+    outcome was barely above chance (0.55-0.70). This means the
+    generated problem was too hard (8 true genes per subgroup buried in
+    6000-24000 real genes) for any method to solve at the available n --
+    the experiment as configured cannot yet distinguish personalization
+    quality, and needs the effect-size/sparsity sweep flagged in the
+    script's own docstring before it says anything.
+  - **Thread 6 (small-sample learning curves)**: the sparse *linear*
+    baseline (Coxnet) had consistently the smallest generalization gap
+    of any method at low training fractions on both datasets (e.g. BRCA
+    at 25% training data: Coxnet gap 0.327 vs. LSPIN 0.437, Concrete
+    0.397, dense MLP 0.414 -- LSPIN was the *worst* of the four). Gated
+    models showed no sample-efficiency edge over the dense MLP baseline
+    on either dataset.
+
+  **What this changes going forward**: the pattern across five of six
+  threads is the same -- a plain, non-personalized, non-deep sparse
+  linear Cox model (Coxnet/elastic-net) matched or beat the gated deep
+  models on stability, sample efficiency, and (where measurable)
+  robustness, at the hyperparameters currently selected for the main
+  paper results. That is a more fundamental issue than any single
+  thread's null result: it suggests either (a) the selected
+  hyperparameters for LSPIN/Concrete (tuned for predictive C-index, per
+  `PERFORMANCE_RECOVERY_ANALYSIS.md`) are not the right operating point
+  for a stability/robustness/personalization claim and a separate
+  hyperparameter search targeting those properties directly is needed
+  before re-running these threads, or (b) the personalization/sparsity
+  story needs to lean on thread 3's biological-plausibility angle
+  (nominally promising, not yet corrected-significant) rather than on
+  stability/robustness/generalization superiority, which this round of
+  evidence does not support. Recommended immediate next steps, in order:
+  1. Re-run thread 2 (stability) and thread 6 (learning curves) with a
+     lambda value chosen specifically to maximize stability/sample-
+     efficiency (not the C-index-selected value) to test hypothesis (a)
+     directly -- cheap, since both scripts already parameterize this.
+  2. Increase power on thread 1 (more folds/reps) before concluding the
+     non-interchangeability test is a true null.
+  3. Sweep effect size on thread 5 so it can actually discriminate
+     methods, then treat its result as the most informative one, since
+     it is the only thread with ground truth to check against.
+  4. Hold off on thread 7 until 1-3 clarify whether there is a
+     personalization/sparsity advantage worth externally validating.
