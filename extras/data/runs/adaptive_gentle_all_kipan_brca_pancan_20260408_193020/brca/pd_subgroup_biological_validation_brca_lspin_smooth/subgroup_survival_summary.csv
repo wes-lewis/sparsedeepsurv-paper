@@ -1,0 +1,2 @@
+n_groups,n_patients,logrank_p,logrank_stat,cox_lr_stat,cox_lr_df,cox_lr_p,cox_full_loglik,cox_reduced_loglik
+1,308,,,1.709168337045753,3,0.6348973917739174,-175.33387960270272,-176.1884637712256
