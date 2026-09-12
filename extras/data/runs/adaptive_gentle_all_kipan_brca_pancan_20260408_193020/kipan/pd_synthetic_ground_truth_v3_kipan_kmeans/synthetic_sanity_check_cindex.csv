@@ -1,0 +1,4 @@
+method,test_cindex
+Concrete_smooth,0.7654741624077229
+LSPIN_smooth,0.7658236142052156
+coxnet_global_matched_k100,0.7605818372428254
