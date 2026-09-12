@@ -110,6 +110,22 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--results-dir", type=Path, default=None)
     p.add_argument("--data-dir", type=Path, default=None)
     p.add_argument("--outdir", type=Path, default=None)
+    p.add_argument(
+        "--candidate-gene-pool-size", type=int, default=None,
+        help=(
+            "Restrict X to this many top-variance genes before assigning true "
+            "features or training (2026-09-12 recalibration): the first-pass run "
+            "at full dimensionality (6000-24000 genes) made recovering "
+            "true-features-per-subgroup=8 too hard for ANY method, including "
+            "baselines (near-zero precision/recall, near-chance sanity-check "
+            "C-index). Restricting to a moderate candidate pool tests the same "
+            "question -- can personalized selection recover subgroup-specific "
+            "truth a global method cannot -- as a fair, tractable feature-"
+            "selection benchmark instead of an unwinnable needle-in-haystack "
+            "search. Real genes are kept (not synthetic), so covariance "
+            "structure among the top-variance genes is still real."
+        ),
+    )
     return p.parse_args()
 
 
@@ -239,7 +255,16 @@ def main() -> None:
 
     data = _load_data(args.dataset, data_dir)
     X, real_time, real_event, histo, genes = _combined_arrays(data)
+
+    if args.candidate_gene_pool_size and args.candidate_gene_pool_size < X.shape[1]:
+        top_idx = np.argsort(-X.var(axis=0))[: args.candidate_gene_pool_size]
+        top_idx = np.sort(top_idx)
+        X = X[:, top_idx]
+        genes = genes[top_idx]
+        print(f"[setup] restricted to top {args.candidate_gene_pool_size} variance genes", flush=True)
+
     n, n_genes = X.shape
+    print(f"[setup] n={n} n_genes={n_genes}", flush=True)
 
     rng = np.random.default_rng(int(args.seed))
     subgroup_labels = assign_synthetic_subgroups(n, args.n_subgroups, rng)
