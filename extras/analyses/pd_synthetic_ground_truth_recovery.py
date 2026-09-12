@@ -126,12 +126,47 @@ def _parse_args() -> argparse.Namespace:
             "structure among the top-variance genes is still real."
         ),
     )
+    p.add_argument(
+        "--subgroup-assignment", choices=["random", "kmeans"], default="kmeans",
+        help=(
+            "2026-09-12 fix: the recalibrated run at pool_size=300 exposed a "
+            "design flaw in 'random' assignment -- subgroup labels drawn "
+            "uniformly at random are, by construction, statistically "
+            "independent of X, so the gating network (which only ever sees X) "
+            "has NO learnable signal from which to infer a patient's true "
+            "subgroup, and personalized selection cannot systematically beat a "
+            "global method under those conditions. That's exactly what was "
+            "observed: on KIPAN, the Coxnet global baseline recovered ground "
+            "truth better than LSPIN/Concrete on every metric. 'kmeans' fixes "
+            "this by defining subgroups as clusters of X itself (so subgroup "
+            "membership is a function of the same covariates the gating "
+            "network conditions on, giving it something to key off of), which "
+            "is the correct design for testing whether personalization can "
+            "exploit X-dependent structure. 'random' is kept as a deliberate "
+            "negative control -- it should NOT show a personalization "
+            "advantage, and confirming that strengthens rather than undermines "
+            "the overall case."
+        ),
+    )
+    p.add_argument("--kmeans-pca-dim", type=int, default=20)
     return p.parse_args()
 
 
-def assign_synthetic_subgroups(n: int, n_subgroups: int, rng: np.random.Generator) -> np.ndarray:
-    labels = rng.integers(0, n_subgroups, size=n)
-    return labels
+def assign_synthetic_subgroups(
+    X: np.ndarray, n_subgroups: int, rng: np.random.Generator, *, mode: str = "kmeans", pca_dim: int = 20,
+) -> np.ndarray:
+    n = X.shape[0]
+    if mode == "random":
+        return rng.integers(0, n_subgroups, size=n)
+    if mode == "kmeans":
+        from sklearn.cluster import KMeans
+        from sklearn.decomposition import PCA
+        Xp = X
+        if pca_dim and pca_dim < X.shape[1]:
+            Xp = PCA(n_components=int(pca_dim), random_state=int(rng.integers(0, 2**31 - 1))).fit_transform(X)
+        km = KMeans(n_clusters=int(n_subgroups), n_init=10, random_state=int(rng.integers(0, 2**31 - 1)))
+        return km.fit_predict(Xp)
+    raise ValueError(f"Unknown subgroup-assignment mode: {mode}")
 
 
 def assign_true_feature_map(
@@ -267,7 +302,9 @@ def main() -> None:
     print(f"[setup] n={n} n_genes={n_genes}", flush=True)
 
     rng = np.random.default_rng(int(args.seed))
-    subgroup_labels = assign_synthetic_subgroups(n, args.n_subgroups, rng)
+    subgroup_labels = assign_synthetic_subgroups(
+        X, args.n_subgroups, rng, mode=args.subgroup_assignment, pca_dim=args.kmeans_pca_dim,
+    )
     true_feature_map = assign_true_feature_map(n_genes, args.n_subgroups, args.true_features_per_subgroup, rng)
     time, event = generate_synthetic_hazard(
         X, subgroup_labels, true_feature_map, args.effect_size, args.censoring_rate, rng,
