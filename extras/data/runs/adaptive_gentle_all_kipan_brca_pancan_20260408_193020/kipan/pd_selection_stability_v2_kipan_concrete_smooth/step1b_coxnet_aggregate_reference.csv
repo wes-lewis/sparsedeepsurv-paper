@@ -1,0 +1,2 @@
+dataset,method,aggregate_stability,aggregate_stability_ci_low,aggregate_stability_ci_high,aggregate_mean_k
+kipan,coxnet_matched_k566,0.22198475433813014,0.24233933919090742,0.3210825101505035,267.06666666666666

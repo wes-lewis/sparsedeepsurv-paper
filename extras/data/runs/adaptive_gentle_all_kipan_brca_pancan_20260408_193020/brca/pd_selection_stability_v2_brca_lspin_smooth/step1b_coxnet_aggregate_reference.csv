@@ -1,0 +1,2 @@
+dataset,method,aggregate_stability,aggregate_stability_ci_low,aggregate_stability_ci_high,aggregate_mean_k
+brca,coxnet_matched_k479,0.1479506236621555,0.16901178749639992,0.2538112233210096,264.4

@@ -1,0 +1,2 @@
+frac_gates_near_0.5,gate_prob_mean,gate_prob_p10,gate_prob_p50,gate_prob_p90,reference_fit_test_cindex
+0.0005594135802469136,0.15318486094474792,0.0,0.0,1.0,0.7064723188018187

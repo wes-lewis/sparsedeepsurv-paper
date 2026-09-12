@@ -1,0 +1,2 @@
+per_patient_stability_median,per_patient_stability_iqr_low,per_patient_stability_iqr_high,per_patient_null_stability_median,per_patient_median_k,aggregate_stability,aggregate_mean_k,mean_test_cindex,n_bootstrap,dataset,gate_family,selection,lambda_multiplier,sigma_multiplier
+-0.0006972579203301521,-0.0008331670097571631,0.0010934739152318462,-0.00024187408645359731,1179.0,-0.00043024123398671676,1933.8666666666666,0.7186859231523581,15,kipan,LSPIN,smooth,1.0,1.0
