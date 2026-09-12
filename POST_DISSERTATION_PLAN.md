@@ -49,36 +49,42 @@ provisional — this is one positive data point on one (dataset, gate
 family) pair, not a settled claim — but it changes what's worth chasing
 next.
 
-1. `wes/pd-selection-stability-index` — **run, updated**; per-patient
-   redesign found KIPAN-Concrete personalization stability is real and
-   sweep-robust; LSPIN and BRCA still show no effect. Highest-priority
-   next step of the whole plan: understand *why* Concrete behaves
-   differently from LSPIN here (its soft-gate distribution looks
-   structurally different — much lower mean, more right-skewed) and
-   whether BRCA's null is about sample size/dimensionality or something
-   else, since that distinction determines whether this generalizes into
-   a real manuscript claim or stays a KIPAN-Concrete-specific curiosity.
-2. `wes/pd-small-sample-learning-curves` — **run**; Coxnet had the
+**Updated again 2026-09-12**: thread 5, once fixed, is now the strongest
+single piece of evidence in the whole plan — a controlled kmeans-vs-
+random contrast showing personalized recovery beats a global baseline
+exactly when and only when the mechanism predicts it should. Moved to
+top priority for anything skeptic-facing. Thread 2's rescue also
+progressed materially (gate_sigma closes roughly two-thirds of the
+KIPAN LSPIN/Concrete gap) but is not yet full parity.
+
+1. `wes/pd-synthetic-ground-truth` — **run, strong positive result**:
+   fixed a real design flaw (random subgroup labels gave the gating
+   network no X-dependent signal to key off) by switching to kmeans-
+   defined subgroups, kept `random` as a negative control. The
+   random-vs-kmeans contrast is the most convincing evidence in this
+   plan for a skeptic, because it demonstrates the effect appears only
+   under the condition the mechanism predicts. Next: robustness sweep
+   (effect size / true-features-per-subgroup / pool size) at the kmeans
+   setting before leaning on this as a headline claim from one
+   calibration point.
+2. `wes/pd-selection-stability-index` — **run, partial rescue in
+   progress**; gate_sigma closes ~2/3 of the KIPAN LSPIN-vs-Concrete gap
+   with no C-index cost, still climbing at 64x with no plateau yet (a
+   further sweep to 128-512x is running). LSPIN and BRCA still lag
+   Concrete's KIPAN result. Next: find where the sigma trend actually
+   tops out, then a joint sigma x lambda grid.
+3. `wes/pd-small-sample-learning-curves` — **run**; Coxnet had the
    smallest generalization gap at low training fractions on both
    datasets. Same re-tuning follow-up as thread 2.
-3. `wes/pd-transport-noninterchangeability` — **run**, underpowered
+4. `wes/pd-transport-noninterchangeability` — **run**, underpowered
    (n=15-20 paired observations); increase folds/reps before treating
    the current null as conclusive.
-4. `wes/pd-synthetic-ground-truth` — **run** at one effect-size setting,
-   which turned out too hard for any method to solve (near-zero
-   precision/recall across the board including baselines). Needs an
-   effect-size/sparsity sweep before it can discriminate methods; once
-   that's done this is still the most informative thread, since it is
-   the only one with ground truth to check against.
 5. `wes/pd-noise-robustness` — **run**, underpowered (n_reps=3); no
    signal detected yet either way.
 6. `wes/pd-biological-validation` — **run**; nominally promising
    pathway-enrichment directions (Coagulation, Complement, TGF-beta) but
    nothing survived multiple-testing correction, and subgroup survival
-   separation was not significant. Most likely candidate for a positive
-   result with more data/subgroup-count tuning, least likely to be
-   undercut by the "hyperparameters tuned for the wrong property"
-   explanation that threads 1/2/6 point to.
+   separation was not significant.
 7. `wes/pd-external-cohort-transfer` — **last priority, confirmed
    2026-09-11**: UK Biobank is not happening; restricted to public,
    no-application-required data only (Desmedt microarray is the sole
@@ -310,20 +316,68 @@ next.
   features per patient, benchmarked against Lasso-Cox and a single global
   sparse MLP. Scaffold added at
   `extras/analyses/pd_synthetic_ground_truth_recovery.py`.
-- **Status**: implemented and run at one effect-size/sparsity setting
-  (effect_size=1.5, 8 true genes/subgroup, 4 synthetic subgroups) on
-  KIPAN and BRCA. Outputs at
-  `<run_dir>/{kipan,brca}/pd_synthetic_ground_truth_{dataset}/`.
-- **Result**: the setting run was too hard for any method to solve —
-  precision/recall/Jaccard were near zero for LSPIN, Concrete, *and* the
-  Coxnet global baseline (e.g. BRCA: all three <0.0015 mean precision),
-  and sanity-check C-index on the synthetic outcome was barely above
-  chance (0.55-0.70). This experiment cannot yet discriminate methods.
-  Next (required before this thread means anything): sweep effect size
-  and/or reduce the true-feature search space (fewer total genes, or
-  more true features per subgroup) so at least the strongest baseline
-  clears a reasonable C-index on the synthetic outcome, then compare
-  recovery quality at that setting.
+- **Status (v1, superseded)**: run at one effect-size/sparsity setting
+  (effect_size=1.5, 8 true genes/subgroup, 4 synthetic subgroups, full
+  6,000-24,000 gene dimensionality) on KIPAN and BRCA. Outputs preserved
+  at `<run_dir>/{kipan,brca}/pd_synthetic_ground_truth_{dataset}/`.
+- **Result (v1)**: too hard for any method to solve — precision/recall/
+  Jaccard were near zero for LSPIN, Concrete, *and* the Coxnet global
+  baseline, and sanity-check C-index was barely above chance (0.55-0.70).
+- **Status (v2, recalibration)**: added `--candidate-gene-pool-size` to
+  restrict X to the top-variance real genes before assigning true
+  features or training, and increased true-features-per-subgroup to 15
+  and effect_size to 2.5. Outputs at
+  `<run_dir>/{kipan,brca}/pd_synthetic_ground_truth_v2_{dataset}/`.
+- **Result (v2)**: fixed the too-hard problem — sanity-check C-index rose
+  to 0.68-0.76 on both datasets — but exposed a deeper design flaw:
+  subgroup labels were drawn *uniformly at random*, independent of X.
+  Since the gating network only ever sees X, a random label gives it no
+  learnable signal to infer a patient's true subgroup from. Result: the
+  Coxnet global baseline recovered ground truth **better** than
+  LSPIN/Concrete on every metric, on both datasets — exactly what that
+  design flaw predicts, not evidence against personalization.
+- **Status (v3, fix + negative control)**: added
+  `--subgroup-assignment {random,kmeans}` (kmeans now default) —
+  subgroups are defined as k-means clusters of X itself (optionally
+  PCA-reduced), so subgroup membership is a function of the same
+  covariates the gate conditions on. `random` is kept as a deliberate
+  negative control that should *not* show a personalization advantage.
+  Outputs at
+  `<run_dir>/{kipan,brca}/pd_synthetic_ground_truth_v3_{dataset}_{kmeans,random}/`.
+- **Result (v3) — the strongest positive evidence in this whole plan**:
+  the kmeans/random contrast behaves exactly as the mechanism predicts.
+  Under **random** assignment (negative control): Coxnet beats both
+  gated methods on precision, recall, and Jaccard on both datasets
+  (confirms the v2 finding is a real, reproducible artifact of
+  X-independent labels, not noise). Under **kmeans** assignment: on
+  KIPAN, Concrete beats Coxnet on precision (0.094 vs. 0.056) and both
+  gated methods beat it on recall (Concrete 0.451, LSPIN 0.528 vs.
+  Coxnet 0.367) and Jaccard (0.084/0.057 vs. 0.052); on BRCA, LSPIN's
+  recall jumps from 0.543 (random) to **0.675** (kmeans), clearly ahead
+  of Coxnet's 0.433, while Concrete's numbers moved less on BRCA than on
+  KIPAN (precision/Jaccard roughly flat vs. random). C-index stayed
+  comparable across all three methods throughout (0.68-0.80 range),
+  confirming — as intended — that comparable predictive accuracy can
+  hide very different feature-recovery quality.
+  **Read the magnitudes with the chance baseline in mind**: with 15 true
+  genes out of a 300-gene candidate pool, a purely random selection of
+  size k≈100 has an expected precision of ~5% (15/300) and expected
+  recall of ~33% (k/300) by chance alone — so the ~0.05-0.09 precision
+  values are only modestly above the floor, while the recall gap
+  (kmeans gated methods reaching 45-68% vs. a ~33% random floor and
+  Coxnet's 37-43%) is the more informative and more clearly real signal
+  here.
+  **Why this is the strongest result so far**: it isn't just a positive
+  number, it's a controlled demonstration that the effect appears only
+  under the condition the mechanism says it should (X-dependent
+  subgroup structure) and disappears under the condition it says it
+  shouldn't (X-independent labels) — which is much harder for a skeptic
+  to dismiss as noise or cherry-picking than either run in isolation.
+- **Next**: sweep effect size / true-features-per-subgroup / pool size
+  at the kmeans setting to check robustness of the direction (not just
+  one calibration point), and consider relabeling with *real* biological
+  subgroups (the originally-deferred option) as a further robustness
+  check now that the X-dependence requirement is understood.
 
 ### 6. Small-sample / high-dimensional learning curves
 - **Branch**: `wes/pd-small-sample-learning-curves`
@@ -527,3 +581,49 @@ are revisited.
   point is precise. Next: push gate_sigma further (32x/64x) with more
   reps per cell, and run a joint sigma x lambda grid rather than more
   one-at-a-time sweeps, since the parameters clearly interact.
+
+- 2026-09-12 (extended gate_sigma sweep, 12-15 reps/cell up from 6, per
+  the noise-floor caution above): the sigma trend keeps climbing with no
+  sign of plateauing through 64x: 1x=-0.0015, 8x=+0.0008, 16x=+0.0059,
+  32x=+0.0108, 64x=+0.0155 (IQR 0.013-0.0165) — about two-thirds of
+  Concrete's KIPAN stability (0.023), a substantial, still-incomplete
+  rescue, with per-patient k converging to a stable ~44-54 genes and
+  C-index holding steady at 0.71-0.72 throughout (no cost). init_bias
+  and a stayed weak at this higher rep count too, confirming gate_sigma
+  is the dominant lever, not an artifact of the earlier 6-rep noise.
+  A further sweep to 128x/256x/512x is running to find where the trend
+  actually tops out or breaks down (output at
+  `pd_lspin_rescue_kipan_v3_sigma_extreme/`, launched 2026-09-12).
+  Outputs at `pd_lspin_rescue_kipan_v2_sigma_extended/`.
+
+- 2026-09-12 (thread 5 recalibrated and fixed — now the strongest result
+  in the plan): first recalibrated the synthetic experiment
+  (`--candidate-gene-pool-size`) to fix the "too hard for anyone"
+  problem from the first pass, which worked (C-index 0.68-0.76) but
+  exposed a real design flaw: subgroup labels drawn uniformly at random
+  are independent of X, so the gating network — which only sees X — has
+  no way to learn which subgroup a patient belongs to, and personalized
+  selection cannot systematically beat a global method under those
+  conditions. Confirmed this by adding `--subgroup-assignment
+  {random,kmeans}`: under `random` (negative control), Coxnet beat both
+  gated methods on every recovery metric on both datasets, replicating
+  the flawed-design finding; under `kmeans` (subgroups defined as
+  clusters of X), the direction reverses — on KIPAN, Concrete and LSPIN
+  both beat Coxnet on recall/Jaccard, Concrete also on precision; on
+  BRCA, LSPIN's recall reaches 0.675 vs. Coxnet's 0.433. This controlled
+  contrast, not a single positive number, is the strongest evidence for
+  personalization's value produced by this whole plan, because it shows
+  the effect appears exactly when the mechanism says it should and
+  disappears when it shouldn't. Promoted to top priority; next step is
+  a robustness sweep at the kmeans setting, not more one-off runs.
+
+- 2026-09-12 (note on process discipline): mid-session, a background job
+  was accidentally broken by switching git branches in the same shared
+  working directory while the job was still starting up — the branch
+  switch removed the very script file the not-yet-launched process
+  needed, causing an immediate file-not-found failure. Caught and fixed
+  by relaunching and confirming (via `ps aux`) that a background job has
+  actually started reading its script into memory before touching the
+  working tree again. Worth remembering for future sessions: prefer a
+  separate git worktree for background analysis jobs, or at minimum
+  confirm process start before any branch switch in the same tree.
