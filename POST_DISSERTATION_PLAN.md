@@ -185,6 +185,72 @@ next.
   model has no mechanism to define, on datasets with enough signal,"
   which is falsifiable and now has a first positive data point.
 
+- **LSPIN rescue investigation (2026-09-11 follow-up)**: rather than
+  accept the LSPIN/Concrete split at face value, ran a mechanism-driven
+  (not blind-grid) search for a parameterization that closes the gap on
+  KIPAN, based on a specific hypothesis about *why* the two gate types
+  might differ. Script:
+  `extras/analyses/pd_lspin_rescue_investigation.py`; outputs at
+  `<run_dir>/kipan/pd_lspin_rescue_kipan/`.
+  - **Hypothesis**: LSPIN's deterministic gate is a hard clamp
+    (`clamp(a*alpha+0.5, 0, 1)`), trained via additive Gaussian noise on
+    the pre-clamp value; Concrete's is a smooth Gumbel-sigmoid. The
+    clamp has an exact zero-gradient region once a gene's raw output
+    exits the linear ramp — unlike Concrete's sigmoid, which never has
+    exactly-zero gradient even when saturated. With the tuned
+    `gate_sigma` small, genes that drift out of the ramp early get
+    almost no corrective signal afterward, so which genes "lock in"
+    open/closed becomes a race decided by early, fit-specific noise —
+    explaining bimodal-but-inconsistent gates and an inflated,
+    poorly-pruned selected set.
+  - **What the sweep found**: `gate_sigma` is a real, clean, *monotonic*
+    lever — raising it from the tuned value up through 16x moved
+    per-patient stability from ≈0/negative up to +0.008 (above the null
+    of ≈0) while *simultaneously* shrinking the median per-patient
+    selected count from ~1,110 genes down to ~99, with no cost to
+    C-index (stayed 0.71-0.73 throughout). That is a genuine partial
+    rescue — more training noise makes LSPIN both sparser and more
+    reproducible per patient at once — but it tops out well short of
+    Concrete's 0.023.
+  - `lspin_init_bias` and `a` were weaker and non-monotonic: a strongly
+    negative init bias (pushing every gene to start deep in "closed")
+    catastrophically collapsed the model — 0 genes selected, C-index
+    0.50 (chance) — consistent with the early-lock-in mechanism (nothing
+    ever got a chance to open). Smaller `a` (wider ramp) gave a small,
+    noisy stability improvement but a much larger selected set (up to
+    ~40% of genes at a=0.25), not a clean win.
+  - Naively combining the single best value from each 1-D sweep (stage
+    D: sigma 16x + init_bias +1.0 + a=0.25, at 15 reps for confidence)
+    **underperformed** the sigma-alone sweep's best point (+0.0044 vs.
+    +0.008) — the parameters interact, so picking per-dimension argmax
+    and combining is not a valid search strategy here; a joint
+    sigma-focused grid (not one-at-a-time-then-combine) is the right
+    next step, not more single-parameter sweeps.
+  - The dead-zone-saturation diagnostic (fraction of gate pre-activations
+    outside the linear ramp) stayed pinned at ~98-100% in *every* cell
+    regardless of hyperparameters — this does not confirm the proposed
+    escape-route mechanism, since it only measures the end-of-training
+    state (where essentially everything is expected to be saturated one
+    way or another) and can't distinguish "locked in early, arbitrarily"
+    from "converged correctly." The hypothesis remains a plausible
+    explanation for the qualitative pattern (matches the sigma effect
+    and the negative-init-bias collapse) but this diagnostic didn't
+    verify the mechanism directly — a process-level diagnostic (tracking
+    which genes flip status *during* training, not just the final state)
+    would be needed to actually confirm it.
+  - **Caution on noise**: the identical nominal setting (a=1.0, i.e. the
+    unmodified baseline) was fit independently twice across two 6-
+    bootstrap estimates and returned per-patient stability of *opposite
+    sign* (-0.0046 vs. +0.0042). At 6 bootstrap reps per sweep cell,
+    individual cell values should not be over-trusted; the sigma trend
+    is credible because it's monotonic across 5 well-separated points,
+    not because any single cell is precise.
+  - **Next step**: push gate_sigma further (32x, 64x — has it plateaued
+    or does it keep helping?) with more bootstrap reps per cell (10-15,
+    not 6) given the demonstrated noise floor, and do a small joint
+    sigma x lambda grid rather than another one-at-a-time sweep, since
+    the stage-D result shows these parameters don't combine additively.
+
 ### 3. Biological / clinical validation of personalized subgroups
 - **Branch**: `wes/pd-biological-validation`
 - **Claim targeted**: gate-derived patient subgroups carry real biological
@@ -433,3 +499,31 @@ are revisited.
   produce" — promoted to top priority to understand why (Concrete vs.
   LSPIN mechanism; KIPAN vs. BRCA sample size/dimensionality) before
   deciding whether it generalizes into a manuscript claim.
+
+- 2026-09-11 (LSPIN rescue investigation on KIPAN): ran a mechanism-
+  driven staged hyperparameter search (gate_sigma, lspin_init_bias, `a`)
+  targeting a specific hypothesis about why LSPIN's hard-clamp gate
+  might be structurally less reproducible than Concrete's smooth
+  relaxation (see thread 2 write-up above for the full mechanism and
+  numbers). Found a real, partial, monotonic rescue lever: raising
+  gate_sigma 8-16x moves per-patient stability from ≈0 to +0.008 while
+  *also* shrinking per-patient selected count 10x (1,110 → 99 genes),
+  with no C-index cost — but this still falls well short of Concrete's
+  0.023, and combining it naively with the best `init_bias`/`a` values
+  from separate 1-D sweeps performed *worse* than gate_sigma alone
+  (interaction effects, not additive). A strongly negative init_bias
+  catastrophically collapsed the model (all gates closed, C-index at
+  chance), consistent with the hypothesized early-lock-in mechanism.
+  The dead-zone-saturation diagnostic did not confirm the mechanism
+  directly (pinned at ~99% in every cell — an end-of-training-state
+  metric that can't distinguish "locked in early" from "converged
+  correctly"), so the mechanism remains plausible and consistent with
+  the pattern of results but not verified at the level of individual
+  training dynamics. Also surfaced an important methods caution: the
+  identical baseline setting gave opposite-signed stability estimates
+  across two independent 6-bootstrap runs, so single-cell values at
+  that rep count should not be over-read — the gate_sigma trend is
+  credible because it's monotonic across 5 points, not because any one
+  point is precise. Next: push gate_sigma further (32x/64x) with more
+  reps per cell, and run a joint sigma x lambda grid rather than more
+  one-at-a-time sweeps, since the parameters clearly interact.
