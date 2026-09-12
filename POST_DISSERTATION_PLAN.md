@@ -37,17 +37,27 @@ somewhere may surface a new thread worth adding.
 
 ## Priority order (reassess after each result)
 
-**Updated 2026-09-11 after first real runs** (see reassessment log below
-for full numbers). All priorities below are provisional pending the
-follow-up steps listed at the end of the 2026-09-11 reassessment entry —
-none of threads 1-6 has yet returned a result that would justify
-promoting anything into the manuscript as-is.
+**Updated 2026-09-11, twice** (see reassessment log below for full
+numbers). First update after the initial real runs; second update after
+thread 2 was redesigned around per-patient (not aggregate) selection
+stability, which surfaced the first clearly positive, hyperparameter-
+robust result of this whole round: **Concrete gates on KIPAN show real
+per-patient selection reproducibility**, consistently above a
+size-matched random null across a 6-cell lambda/sigma sweep. That result
+does not extend to LSPIN or to BRCA. All priorities below are still
+provisional — this is one positive data point on one (dataset, gate
+family) pair, not a settled claim — but it changes what's worth chasing
+next.
 
-1. `wes/pd-selection-stability-index` — **run**; the most decisive result
-   so far (gated stability indistinguishable from chance, a plain Coxnet
-   baseline far more stable). Re-run next with lambda chosen to maximize
-   stability rather than C-index, to test whether this is a
-   hyperparameter artifact before concluding anything structural.
+1. `wes/pd-selection-stability-index` — **run, updated**; per-patient
+   redesign found KIPAN-Concrete personalization stability is real and
+   sweep-robust; LSPIN and BRCA still show no effect. Highest-priority
+   next step of the whole plan: understand *why* Concrete behaves
+   differently from LSPIN here (its soft-gate distribution looks
+   structurally different — much lower mean, more right-skewed) and
+   whether BRCA's null is about sample size/dimensionality or something
+   else, since that distinction determines whether this generalizes into
+   a real manuscript claim or stays a KIPAN-Concrete-specific curiosity.
 2. `wes/pd-small-sample-learning-curves` — **run**; Coxnet had the
    smallest generalization gap at low training fractions on both
    datasets. Same re-tuning follow-up as thread 2.
@@ -108,18 +118,72 @@ promoting anything into the manuscript as-is.
   across the existing bootstrap/rerun gate matrices, for LSPIN/Concrete vs.
   Lasso-Cox/elastic-net-Cox baselines. Scaffold added at
   `extras/analyses/pd_selection_stability_index.py`.
-- **Status**: implemented and run (15 bootstrap resamples) on KIPAN and
-  BRCA, both LSPIN and Concrete. Outputs at
-  `<run_dir>/{kipan,brca}/pd_selection_stability_{dataset}_{family}_smooth_15boot/`.
-- **Result**: the most decisive finding of this round. Gated stability
-  (0.001-0.025) was indistinguishable from a random-selection null
-  (-0.001-0.0002) on every (dataset, family) combination; a
-  sparsity-matched Coxnet baseline was far more stable (0.16-0.22, CIs
-  non-overlapping with the gated methods'). As currently tuned, LSPIN/
-  Concrete selection is not more reproducible than chance at the
-  aggregate level. Next: re-run with a lambda chosen to maximize
-  stability rather than the C-index-selected value, to separate "gating
-  can't be stable" from "these hyperparameters weren't tuned for it."
+- **Status (v1, superseded)**: first pass measured stability of the
+  *aggregate/consensus* gene set (population-level union), run at 15
+  bootstrap resamples on KIPAN/BRCA x LSPIN/Concrete. Outputs preserved
+  at `<run_dir>/{kipan,brca}/pd_selection_stability_{dataset}_{family}_smooth_15boot/`
+  for provenance, but this framing was the wrong unit of analysis for a
+  method whose actual claim is about *individual* selection (see v2
+  below) — flagged directly by feedback on the first result.
+- **Status (v2, current)**: redesigned and rerun. Three sequential steps
+  per (dataset, family): (0) a gate-saturation diagnostic on one
+  reference fit, checking whether soft gate values sit near the 0.5 hard
+  threshold (the failure mode `COLLABORATOR_GUIDE.md` calls out — gates
+  near a threshold would flip from fit-to-fit noise alone, unrelated to
+  the method's real ceiling); (1) *per-patient* stability — fix a
+  held-out evaluation cohort once, bootstrap-refit the model 15 times on
+  a disjoint training pool, and for each held-out patient compute the
+  Nogueira-Brown stability of *their own* selected-gene vector across the
+  15 independent fits, against a size-matched per-patient random null
+  (plus the old aggregate metric kept alongside, since it's still the
+  only fair comparison point for Coxnet, which has no per-patient notion
+  of selection); (2) a 6-cell lambda x gate_sigma sweep (multipliers
+  {1,2,4} x {1,0.5}, 6 bootstrap reps per cell) reporting per-patient
+  stability, median per-patient selected count, and test C-index
+  together. Outputs at
+  `<run_dir>/{kipan,brca}/pd_selection_stability_v2_{dataset}_{family}_smooth/`.
+- **Result (v2)**: gate saturation is *not* the explanation anywhere —
+  in every (dataset, family) cell, gates were sharply bimodal (≤0.6% of
+  values within 0.1 of the 0.5 threshold; most mass at 0 or 1), so
+  low stability where it occurs reflects genuinely different genes
+  clearing the threshold between fits, not indecisive gates. The
+  headline result: **Concrete gates on KIPAN show real per-patient
+  selection stability**, clearly and consistently above the size-matched
+  null across every cell of the sweep (0.005-0.024 vs. null ≈0, with
+  non-overlapping IQRs at the tuned operating point: median 0.023 vs.
+  null -0.0001) — the first clearly positive, hyperparameter-robust
+  personalization-stability result in this whole round of experiments.
+  This does **not** generalize: LSPIN shows no such effect on KIPAN
+  (median ≈ -0.0007, indistinguishable from null across the entire
+  sweep) or on BRCA (both families ≈0 across the sweep, C-index also
+  degrading at higher lambda on BRCA, down to ~0.53-0.57). Per-patient
+  selected-set sizes also varied enormously by hyperparameter and
+  dataset — KIPAN LSPIN selected a median ~1,179 of 6,000 genes per
+  patient at the tuned operating point (~20%, not obviously "sparse" at
+  the personal level even though the aggregate story calls it sparse),
+  dropping to ~450 at 4x lambda without a corresponding stability gain;
+  KIPAN Concrete ranged from ~620 down to ~80 across the sweep, with its
+  best stability sitting at the *least* sparse end (1x lambda) rather
+  than the sparsest. Aggregate-level stability (the v1 metric, kept for
+  the Coxnet comparison) still favors Coxnet substantially in every
+  cell (0.15-0.22 vs. the gated methods' 0.0003-0.033), which remains
+  true but is now clearly labeled as a different, coarser quantity than
+  the per-patient result above.
+  **Implication**: there is a real, tunable personalization-stability
+  story here, but it is specific to Concrete-style gates and (so far)
+  to KIPAN — not a property of "the method" in general. Next steps: (a)
+  investigate why Concrete's soft-gate distribution (very low mean
+  probability, heavily right-skewed) behaves differently from LSPIN's
+  here — this looks like it could be a genuine mechanistic difference
+  between the two gate parameterizations worth explaining, not noise;
+  (b) check whether BRCA's failure to show the effect is about sample
+  size, dimensionality (24k vs 6k genes), or something dataset-specific,
+  e.g. by rerunning at a few sample-size fractions; (c) if this holds up,
+  it is a much stronger and more specific manuscript claim than
+  "our method is stable" — it is "Concrete-style personalized gating
+  achieves per-patient selection reproducibility a global sparse Cox
+  model has no mechanism to define, on datasets with enough signal,"
+  which is falsifiable and now has a first positive data point.
 
 ### 3. Biological / clinical validation of personalized subgroups
 - **Branch**: `wes/pd-biological-validation`
@@ -345,3 +409,27 @@ are revisited.
      it is the only thread with ground truth to check against.
   4. Hold off on thread 7 until 1-3 clarify whether there is a
      personalization/sparsity advantage worth externally validating.
+
+- 2026-09-11 (thread 2 redesigned around per-patient stability, per
+  feedback that aggregate-set stability was the wrong unit of analysis
+  for a personalization method): reran thread 2 as three sequential
+  steps (gate-saturation diagnostic, per-patient stability against a
+  size-matched null with a fixed held-out eval cohort across bootstrap
+  refits, and a 6-cell lambda x gate_sigma sweep). Result: **Concrete
+  gates on KIPAN show real, sweep-robust per-patient selection
+  stability** (0.005-0.024 vs. a null of ≈0 in every cell; 0.023 vs.
+  -0.0001 at the tuned operating point) — the first clearly positive
+  result in this entire round. This does not extend to LSPIN on either
+  dataset or to Concrete on BRCA; gate saturation ("stuck near 0.5") was
+  ruled out as the explanation everywhere via the step-0 diagnostic
+  (gates are sharply bimodal in every cell). Per-patient selected-set
+  sizes also turned out to vary far more across (dataset, family,
+  hyperparameter) than the aggregate framing suggested — KIPAN LSPIN
+  selects ~20% of genes per patient at the tuned point, not obviously
+  sparse individually despite the aggregate result implying sparsity.
+  This reframes thread 2 from "gated selection isn't stable" to "one
+  specific gate parameterization, on one dataset, shows a real
+  stability advantage a global sparse model has no mechanism to
+  produce" — promoted to top priority to understand why (Concrete vs.
+  LSPIN mechanism; KIPAN vs. BRCA sample size/dimensionality) before
+  deciding whether it generalizes into a manuscript claim.
