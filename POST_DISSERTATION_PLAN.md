@@ -596,6 +596,26 @@ are revisited.
   `pd_lspin_rescue_kipan_v3_sigma_extreme/`, launched 2026-09-12).
   Outputs at `pd_lspin_rescue_kipan_v2_sigma_extended/`.
 
+- 2026-09-12 (gate_sigma ceiling found — the arc is now complete):
+  128x=+0.0128, 256x=+0.0143 (12 reps each) — a plateau, not further
+  improvement past 64x — then 512x collapses to +0.0036 with C-index
+  also dropping (0.666 vs. ~0.70-0.72 elsewhere), confirming the rescue
+  has a real ceiling and reverses at extreme noise, symmetric to the
+  negative-init-bias collapse found at the opposite extreme. **Caution,
+  again**: the 15-rep confirmation of the nominal-best cell (256x) came
+  in at +0.0075, meaningfully lower than the 12-rep estimate of the same
+  setting (+0.0143) — so the honest characterization is "peak stability
+  roughly 0.007-0.016, reached somewhere in the 64-256x range," not a
+  single precise number. Bottom line for thread 2: gate_sigma is a real,
+  reproducible, ceiling-having lever that closes a meaningful fraction
+  (very roughly a third to two-thirds, given the above range) of the
+  KIPAN LSPIN-vs-Concrete gap at no C-index cost, but does not achieve
+  full parity with Concrete's 0.023 anywhere in the range tested.
+  Whether LSPIN can fully match Concrete likely requires a different
+  lever entirely (the joint sigma x lambda grid, or the sigma-annealing
+  schedule idea, both still untried) rather than pushing sigma alone
+  further — pushing sigma alone has now been explored end to end.
+
 - 2026-09-12 (thread 5 recalibrated and fixed — now the strongest result
   in the plan): first recalibrated the synthetic experiment
   (`--candidate-gene-pool-size`) to fix the "too hard for anyone"
