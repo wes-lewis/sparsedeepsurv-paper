@@ -451,10 +451,15 @@ def _worker(
     cluster_n_clusters: int,
     global_freq_threshold: float,
 ) -> str:
-    import sys as _sys
-
-    if _SDS_SRC not in _sys.path:
-        _sys.path.insert(0, _SDS_SRC)
+    # 2026-09-13 fix: this referenced an undefined `_SDS_SRC`, a dead
+    # leftover that crashed every spawned worker with NameError (confirmed
+    # present in v1 too -- ch3_broad_gentle.py has the identical bug). The
+    # module-level `ensure_repo_imports()` call already re-runs correctly
+    # when multiprocessing's spawn start method re-imports this module in
+    # the child process, so this manual sys.path block was both broken and
+    # redundant; calling it explicitly here is a harmless, explicit
+    # safety net in case that assumption ever changes.
+    ensure_repo_imports()
 
     import sparsedeepsurv as sds
     from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
