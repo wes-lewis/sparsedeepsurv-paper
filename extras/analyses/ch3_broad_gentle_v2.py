@@ -581,6 +581,7 @@ def _worker(
                     "gate_type": gate_type,
                     "predictor": predictor,
                     "gate_sigma": gate_sigma,
+                    "temperature": temperature,
                     "lambda_sparse": lam,
                     "lambda_sample_smooth": smooth,
                     "seed": int(s),
