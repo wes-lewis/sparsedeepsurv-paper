@@ -85,7 +85,7 @@ DATASET_SPECS = {
             "LSPIN": {
                 "gate_type": "lspin_tf",
                 "predictor": "mlp",
-                "sigmas": [0.22, 0.20],
+                "sigmas": [0.15, 0.25],
                 "lambdas": [0.0035, 0.00525, 0.007, 0.00875, 0.0105, 0.014, 0.021, 0.028],
                 "temperatures": [0.5],
                 "patience": 12,
@@ -95,21 +95,24 @@ DATASET_SPECS = {
             # is a confirmed no-op for _sample_concrete), so gate_sigma is
             # fixed at a single value (v1 wastefully swept it as [0.15, 0.12],
             # producing bit-identical duplicate results) and temperature is
-            # the swept dimension -- PILOT RANGE, to be narrowed by the pilot
-            # run before the full redo.
+            # the swept dimension. Final range [0.2, 0.5] (bracketing v1's
+            # fixed default of 0.3) chosen from the 2026-09-13 pilot: C-index
+            # stable (0.72-0.73) and Khard varies meaningfully (441->266)
+            # across 0.1-0.8, with 1.6 looking past the useful range for
+            # L-Concrete (Khard drop + lowest C-index of the pilot).
             "Concrete": {
                 "gate_type": "concrete",
                 "predictor": "mlp",
                 "sigmas": [0.15],
                 "lambdas": [0.00075, 0.001, 0.0015, 0.002, 0.0025, 0.003, 0.004, 0.006],
-                "temperatures": [0.15, 0.3, 0.6, 1.2],
+                "temperatures": [0.2, 0.5],
                 "patience": 20,
                 "lr": 0.001,
             },
             "L-LSPIN": {
                 "gate_type": "lspin_tf",
                 "predictor": "linear",
-                "sigmas": [0.22, 0.20],
+                "sigmas": [0.15, 0.25],
                 "lambdas": [0.0035, 0.00525, 0.007, 0.00875, 0.0105, 0.014, 0.021, 0.028],
                 "temperatures": [0.5],
                 "patience": 20,
@@ -120,7 +123,7 @@ DATASET_SPECS = {
                 "predictor": "linear",
                 "sigmas": [0.15],
                 "lambdas": [0.00075, 0.001, 0.0015, 0.002, 0.0025, 0.003, 0.004, 0.006],
-                "temperatures": [0.15, 0.3, 0.6, 1.2],
+                "temperatures": [0.2, 0.5],
                 "patience": 20,
                 "lr": 0.001,
             },
@@ -140,7 +143,7 @@ DATASET_SPECS = {
             "LSPIN": {
                 "gate_type": "lspin_tf",
                 "predictor": "mlp",
-                "sigmas": [0.15, 0.12],
+                "sigmas": [0.1, 0.2],
                 "lambdas": [0.0035, 0.00525, 0.007, 0.00875, 0.0105, 0.014, 0.021, 0.028],
                 "temperatures": [0.5],
                 "patience": 12,
@@ -151,14 +154,14 @@ DATASET_SPECS = {
                 "predictor": "mlp",
                 "sigmas": [0.15],
                 "lambdas": [0.0011, 0.00165, 0.0022, 0.00275, 0.0033, 0.0044, 0.0055, 0.0066],
-                "temperatures": [0.15, 0.3, 0.6, 1.2],
+                "temperatures": [0.2, 0.5],
                 "patience": 20,
                 "lr": 0.001,
             },
             "L-LSPIN": {
                 "gate_type": "lspin_tf",
                 "predictor": "linear",
-                "sigmas": [0.15, 0.12],
+                "sigmas": [0.1, 0.2],
                 "lambdas": [0.0035, 0.00525, 0.007, 0.00875, 0.0105, 0.014, 0.021, 0.028],
                 "temperatures": [0.5],
                 "patience": 35,
@@ -169,7 +172,7 @@ DATASET_SPECS = {
                 "predictor": "linear",
                 "sigmas": [0.15],
                 "lambdas": [0.0011, 0.00165, 0.0022, 0.00275, 0.0033, 0.0044, 0.0055, 0.0066],
-                "temperatures": [0.15, 0.3, 0.6, 1.2],
+                "temperatures": [0.2, 0.5],
                 "patience": 20,
                 "lr": 0.001,
             },
