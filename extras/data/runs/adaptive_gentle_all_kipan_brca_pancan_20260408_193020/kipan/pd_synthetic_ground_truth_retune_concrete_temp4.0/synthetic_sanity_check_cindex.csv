@@ -1,0 +1,11 @@
+rep,method,test_cindex,target_k
+0,L-Concrete_smooth,0.75149599662874,
+0,coxnet_global,0.7291613990729034,20.0
+1,L-Concrete_smooth,0.769004496365088,
+1,coxnet_global,0.7185359499096525,17.0
+2,L-Concrete_smooth,0.7530372597618951,
+2,coxnet_global,0.7208158953313559,20.0
+3,L-Concrete_smooth,0.7604482132041187,
+3,coxnet_global,0.7041619797525309,18.0
+4,L-Concrete_smooth,0.7971288084994292,
+4,coxnet_global,0.7406269207129687,19.0
