@@ -15,12 +15,17 @@ DEVICE=${1:-cuda:7}
 for effect_size in 1.5 2.5 4.0; do
   for true_k in 10 15 25; do
     tag="es${effect_size}_tk${true_k}"
+    outdir="$RUN/pd_synthetic_ground_truth_robustness_${tag}"
+    if [ -f "$outdir/synthetic_recovery_overall.csv" ]; then
+      echo "=== $tag (already done, skipping) ==="
+      continue
+    fi
     echo "=== $tag ==="
     $PY pd_synthetic_ground_truth_recovery.py \
       --dataset kipan --device "$DEVICE" \
       --candidate-gene-pool-size 300 --true-features-per-subgroup "$true_k" --effect-size "$effect_size" \
       --subgroup-assignment kmeans \
-      --outdir "$RUN/pd_synthetic_ground_truth_robustness_${tag}"
+      --outdir "$outdir"
   done
 done
 echo "ALL_ROBUSTNESS_RUNS_DONE"
