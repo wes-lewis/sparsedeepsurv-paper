@@ -57,16 +57,24 @@ top priority for anything skeptic-facing. Thread 2's rescue also
 progressed materially (gate_sigma closes roughly two-thirds of the
 KIPAN LSPIN/Concrete gap) but is not yet full parity.
 
-1. `wes/pd-synthetic-ground-truth` — **run, strong positive result**:
-   fixed a real design flaw (random subgroup labels gave the gating
-   network no X-dependent signal to key off) by switching to kmeans-
-   defined subgroups, kept `random` as a negative control. The
-   random-vs-kmeans contrast is the most convincing evidence in this
-   plan for a skeptic, because it demonstrates the effect appears only
-   under the condition the mechanism predicts. Next: robustness sweep
-   (effect size / true-features-per-subgroup / pool size) at the kmeans
-   setting before leaning on this as a headline claim from one
-   calibration point.
+1. `wes/pd-synthetic-ground-truth` — **run, real but conditional
+   result, now precisely characterized**: fixed a real design flaw
+   (random subgroup labels gave the gating network no X-dependent
+   signal to key off) via kmeans-defined subgroups, kept `random` as a
+   negative control — the kmeans-vs-random contrast remains the
+   cleanest mechanism demonstration in this plan. Also validated with
+   *real* biology (KIPAN's actual pooled kidney-cancer subtypes: Jaccard
+   0.100 vs. Coxnet's 0.088). But the follow-up 9-point robustness
+   sweep found the recovery advantage is **not** uniform across
+   effect-size/true-feature-density settings — it holds consistently at
+   one true-feature-density value (true_features_per_subgroup=15 of a
+   300-gene pool, across all 3 effect sizes tested) and loses or ties at
+   lower/higher density. The honest claim is narrower than "our method
+   wins": personalization helps when each subgroup's true signal is a
+   moderate, non-trivial slice of the feature space, not vanishingly
+   sparse or so large a single global set already covers it. Next:
+   characterize the density boundary more precisely and get a second
+   real-biology data point (BRCA ductal-vs-lobular).
 2. `wes/pd-selection-stability-index` — **run, partial rescue in
    progress**; gate_sigma closes ~2/3 of the KIPAN LSPIN-vs-Concrete gap
    with no C-index cost, still climbing at 64x with no plateau yet (a
@@ -373,11 +381,63 @@ KIPAN LSPIN/Concrete gap) but is not yet full parity.
   subgroup structure) and disappears under the condition it says it
   shouldn't (X-independent labels) — which is much harder for a skeptic
   to dismiss as noise or cherry-picking than either run in isolation.
-- **Next**: sweep effect size / true-features-per-subgroup / pool size
-  at the kmeans setting to check robustness of the direction (not just
-  one calibration point), and consider relabeling with *real* biological
-  subgroups (the originally-deferred option) as a further robustness
-  check now that the X-dependence requirement is understood.
+- **Status (v4, real biology)**: added `--subgroup-assignment histology`
+  — subgroups are KIPAN's actual pooled kidney cancer subtypes (clear
+  cell renal cell carcinoma n=518, papillary n=278, chromophobe n=65),
+  already present in the processed data, not a synthetic or unsupervised
+  construct. Outputs at
+  `<run_dir>/kipan/pd_synthetic_ground_truth_v4_kipan_histology/`.
+- **Result (v4)**: mixed but real, and arguably more meaningful than the
+  kmeans result since these are real cancer subtypes. Concrete wins the
+  two metrics that penalize a bloated selected set — precision (0.110
+  vs. Coxnet's 0.092) and Jaccard (0.100 vs. 0.088) — while Coxnet wins
+  recall (0.622 vs. Concrete's 0.475), which is expected and doesn't
+  undercut the case: Coxnet applies one fixed global set to every
+  patient regardless of subtype, so it accumulates recall for free
+  across the whole cohort; Jaccard is what correctly penalizes that
+  waste, and that's where Concrete pulls ahead. LSPIN underperformed
+  both gated-vs-Coxnet comparisons here, consistent with its
+  documented weakness elsewhere in thread 2. C-index comparable across
+  all three (0.78-0.79).
+- **Status (v5, 9-point robustness sweep, kmeans setting)**: swept
+  effect_size in {1.5, 2.5, 4.0} x true_features_per_subgroup in
+  {10, 15, 25} at the validated pool_size=300, to check whether the
+  kmeans-subgroup advantage from one calibration point holds broadly.
+  Outputs at `<run_dir>/kipan/pd_synthetic_ground_truth_robustness_es{...}_tk{...}/`.
+- **Result (v5) — an important correction to how strong this claim is**:
+  it does **not** hold uniformly across the grid. Comparing Jaccard
+  (best of Concrete/LSPIN vs. Coxnet global) at each of the 9 cells:
+  - `true_features_per_subgroup=10`: Coxnet wins or ties at all 3 effect
+    sizes (0.047 tie at es=1.5; Coxnet wins at es=2.5 and es=4.0).
+  - `true_features_per_subgroup=15`: **gated methods (Concrete) win at
+    all 3 effect sizes** — 0.068 vs. 0.050 (es=1.5), 0.084 vs. 0.052
+    (es=2.5, the original calibration point), 0.075 vs. 0.049 (es=4.0).
+    This is the one slice of the grid that is consistently positive.
+  - `true_features_per_subgroup=25`: Coxnet wins at all 3 effect sizes.
+  So the personalization-recovery advantage is real and reproducible
+  *across effect sizes* at one specific true-feature density (~5% of
+  the 300-gene pool per subgroup, ~15% pooled across all 4 subgroups),
+  but is not a general-purpose advantage across feature-density
+  settings — at lower or higher true-feature density, the global Coxnet
+  baseline wins or ties. This is what a robustness sweep is supposed to
+  do: it found a genuine boundary condition instead of confirming an
+  unconditional claim, which is a more honest and more precise result
+  than the original single calibration point implied on its own.
+  **Reframed claim**: personalized selection outperforms a global
+  sparse baseline on subgroup-specific feature recovery in the regime
+  where each subgroup's true signal is a moderate, non-trivial slice of
+  the feature space — not vanishingly sparse (too few true features to
+  reliably separate from noise) and not so large that a single global
+  set can adequately cover every subgroup's needs at once. That is a
+  narrower, more defensible claim than "personalization always wins,"
+  and it is the honest one supported by this round of evidence.
+- **Next**: characterize the true-feature-density boundary more
+  precisely (denser grid around true_k=12-20, and check whether the
+  boundary shifts with pool_size, since density is relative to the
+  candidate pool), and separately confirm the v4 histology result
+  reproduces on BRCA's better-populated subtype categories
+  (ductal n=730 vs. lobular n=200, via `--histology-top-k 2`) as a
+  second real-biology data point beyond KIPAN.
 
 ### 6. Small-sample / high-dimensional learning curves
 - **Branch**: `wes/pd-small-sample-learning-curves`
@@ -647,3 +707,24 @@ are revisited.
   working tree again. Worth remembering for future sessions: prefer a
   separate git worktree for background analysis jobs, or at minimum
   confirm process start before any branch switch in the same tree.
+
+- 2026-09-13 (same mistake recurred, worse, then fixed properly): added
+  real-biology (`histology`) subgroups for KIPAN and a 9-point
+  effect-size/true-feature-density robustness sweep for the kmeans
+  setting. The sweep driver is a shell loop that re-invokes the Python
+  script fresh on every iteration, so the "confirm process started"
+  fix from the previous note was insufficient — a branch switch after
+  the loop's *first* iteration had started still broke its *third*
+  iteration, silently losing that config's compute. Fixed by (a) making
+  the sweep script resumable (skip any config whose output file already
+  exists) so a future recurrence loses at most partial progress, not
+  correctness, and (b) simply not switching branches at all until a
+  multi-invocation background job is fully finished, confirmed via its
+  completion log line rather than a one-time process check. Escalating
+  this note: for any background job that invokes a branch-specific
+  script more than once (sweeps, loops, retries), do not touch the
+  working tree's branch until the job's own logged completion, full
+  stop — checking that the process started is not sufficient for these.
+  Results-wise: the KIPAN real-biology run and the full 9-point sweep
+  both completed correctly after the fix (see thread 5 above for
+  numbers); no data was lost, only one config's compute was repeated.
