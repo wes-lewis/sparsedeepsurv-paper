@@ -127,7 +127,7 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     p.add_argument(
-        "--subgroup-assignment", choices=["random", "kmeans"], default="kmeans",
+        "--subgroup-assignment", choices=["random", "kmeans", "histology"], default="kmeans",
         help=(
             "2026-09-12 fix: the recalibrated run at pool_size=300 exposed a "
             "design flaw in 'random' assignment -- subgroup labels drawn "
@@ -145,10 +145,28 @@ def _parse_args() -> argparse.Namespace:
             "exploit X-dependent structure. 'random' is kept as a deliberate "
             "negative control -- it should NOT show a personalization "
             "advantage, and confirming that strengthens rather than undermines "
-            "the overall case."
+            "the overall case. "
+            "2026-09-13: 'histology' goes one step further than kmeans -- "
+            "instead of an unsupervised clustering artifact, subgroups are the "
+            "REAL cancer subtype labels already in the processed data "
+            "(histo_train/histo_test). KIPAN is the natural dataset for this: "
+            "it is a pan-cancer cohort pooling three distinct kidney cancer "
+            "subtypes (kidney clear cell / papillary / chromophobe renal cell "
+            "carcinoma) that are known to differ transcriptomically, so "
+            "'subgroup' here is real biology, not a synthetic construct or an "
+            "unsupervised artifact -- overrides --n-subgroups to match the "
+            "number of histology categories actually present (or "
+            "--histology-top-k most frequent, for datasets with a long tail "
+            "of rare categories, e.g. BRCA)."
         ),
     )
     p.add_argument("--kmeans-pca-dim", type=int, default=20)
+    p.add_argument(
+        "--histology-top-k", type=int, default=None,
+        help="For --subgroup-assignment histology: keep only the top-k most frequent "
+             "histology categories (drop patients in smaller/rarer categories) "
+             "rather than using every category present.",
+    )
     return p.parse_args()
 
 
@@ -167,6 +185,25 @@ def assign_synthetic_subgroups(
         km = KMeans(n_clusters=int(n_subgroups), n_init=10, random_state=int(rng.integers(0, 2**31 - 1)))
         return km.fit_predict(Xp)
     raise ValueError(f"Unknown subgroup-assignment mode: {mode}")
+
+
+def assign_histology_subgroups(
+    histo: np.ndarray, top_k: int | None = None,
+) -> tuple[np.ndarray, np.ndarray, list[str]]:
+    """Real cancer-subtype labels as subgroups (e.g. KIPAN's three pooled
+    kidney cancer subtypes). Returns (subgroup_labels, keep_mask,
+    category_names_in_label_order); keep_mask drops patients outside the
+    top_k most frequent categories, if top_k is given."""
+    histo = np.asarray(histo).astype(str)
+    values, counts = np.unique(histo, return_counts=True)
+    order = np.argsort(-counts)
+    values = values[order]
+    if top_k is not None:
+        values = values[: int(top_k)]
+    keep_mask = np.isin(histo, values)
+    label_map = {v: i for i, v in enumerate(values)}
+    labels = np.array([label_map.get(h, -1) for h in histo[keep_mask]], dtype=int)
+    return labels, keep_mask, list(values)
 
 
 def assign_true_feature_map(
@@ -298,14 +335,29 @@ def main() -> None:
         genes = genes[top_idx]
         print(f"[setup] restricted to top {args.candidate_gene_pool_size} variance genes", flush=True)
 
+    rng = np.random.default_rng(int(args.seed))
+
+    n_subgroups = args.n_subgroups
+    if args.subgroup_assignment == "histology":
+        subgroup_labels, keep_mask, category_names = assign_histology_subgroups(
+            histo, top_k=args.histology_top_k,
+        )
+        X = X[keep_mask]
+        histo = histo[keep_mask]
+        n_subgroups = len(category_names)
+        print(f"[setup] histology subgroups: {dict(zip(category_names, np.bincount(subgroup_labels)))} "
+              f"(dropped {int((~keep_mask).sum())} patients outside top_k)", flush=True)
+    else:
+        subgroup_labels = None  # assigned below, after n/n_genes are known
+
     n, n_genes = X.shape
     print(f"[setup] n={n} n_genes={n_genes}", flush=True)
 
-    rng = np.random.default_rng(int(args.seed))
-    subgroup_labels = assign_synthetic_subgroups(
-        X, args.n_subgroups, rng, mode=args.subgroup_assignment, pca_dim=args.kmeans_pca_dim,
-    )
-    true_feature_map = assign_true_feature_map(n_genes, args.n_subgroups, args.true_features_per_subgroup, rng)
+    if subgroup_labels is None:
+        subgroup_labels = assign_synthetic_subgroups(
+            X, n_subgroups, rng, mode=args.subgroup_assignment, pca_dim=args.kmeans_pca_dim,
+        )
+    true_feature_map = assign_true_feature_map(n_genes, n_subgroups, args.true_features_per_subgroup, rng)
     time, event = generate_synthetic_hazard(
         X, subgroup_labels, true_feature_map, args.effect_size, args.censoring_rate, rng,
     )
