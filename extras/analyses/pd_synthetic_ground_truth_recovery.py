@@ -115,6 +115,36 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     p.add_argument("--selection", choices=["nosmooth", "smooth"], default="smooth")
+    p.add_argument(
+        "--gate-sigma-multiplier", type=float, default=1.0,
+        help=(
+            "2026-09-13: the L-LSPIN/L-Concrete configs pulled from "
+            "selected_comparison_configs.csv were tuned for predictive C-index "
+            "on the REAL KIPAN survival task, not for recovery quality on this "
+            "much-smaller synthetic true-signal task -- there's no reason to "
+            "expect that operating point is right here. gate_sigma was "
+            "established (thread 2's rescue investigation) as the most "
+            "effective lever for LSPIN-family per-patient selection quality, "
+            "with a real ceiling around 64-256x on the real task; use this to "
+            "retune it for the synthetic task specifically."
+        ),
+    )
+    p.add_argument(
+        "--lambda-multiplier", type=float, default=1.0,
+        help="Same rationale as --gate-sigma-multiplier, for lambda_sparse.",
+    )
+    p.add_argument(
+        "--temperature-multiplier", type=float, default=1.0,
+        help=(
+            "2026-09-13: gate_sigma only affects LSPIN-family gates -- "
+            "Concrete's deterministic/training gate (_sample_concrete in "
+            "deepsurv_gated.py) never references gate_sigma at all, only "
+            "temperature (Gumbel-softmax sharpness). --gate-sigma-multiplier "
+            "is therefore a no-op for L-Concrete; use this instead to retune "
+            "Concrete's exploration/sharpness, analogous to how gate_sigma "
+            "was the effective lever for LSPIN in thread 2's rescue."
+        ),
+    )
     p.add_argument("--n-subgroups", type=int, default=4)
     p.add_argument("--true-features-per-subgroup", type=int, default=8)
     p.add_argument("--effect-size", type=float, default=1.5)
@@ -416,6 +446,10 @@ def main() -> None:
 
         mean_k_gated = []
         for _, cfg in configs.iterrows():
+            cfg = cfg.copy()
+            cfg["gate_sigma"] = float(cfg["gate_sigma"]) * float(args.gate_sigma_multiplier)
+            cfg["lambda_sparse"] = float(cfg["lambda_sparse"]) * float(args.lambda_multiplier)
+            cfg["temperature"] = float(cfg["temperature"]) * float(args.temperature_multiplier)
             label = f"{cfg['family']}_{cfg['selection']}"
             Xt_tr = sds.as_torch(X[train_idx])
             A = None
