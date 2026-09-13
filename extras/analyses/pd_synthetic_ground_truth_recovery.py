@@ -88,7 +88,32 @@ DATA_DEFAULTS = PROCESSED_DATASETS
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--dataset", choices=["kipan", "brca"], default="kipan")
-    p.add_argument("--families", nargs="+", default=["LSPIN", "Concrete"], choices=["LSPIN", "Concrete"])
+    p.add_argument(
+        "--families", nargs="+", default=["LSPIN", "Concrete"],
+        choices=["LSPIN", "Concrete", "L-LSPIN", "L-Concrete"],
+        help=(
+            "2026-09-13: the synthetic hazard is a purely LINEAR combination of "
+            "the true genes (see generate_synthetic_hazard). 'LSPIN'/'Concrete' "
+            "use an MLP risk head on top of the gate (predictor='mlp', a 64->32 "
+            "hidden network) -- a functional mismatch for a linear generating "
+            "process, and a harder, noisier optimization problem than Coxnet's "
+            "pure linear fit faces, which is not a fair test of personalization "
+            "per se. 'L-LSPIN'/'L-Concrete' use a linear risk head "
+            "(predictor='linear'), the correct apples-to-apples comparison "
+            "against Coxnet for this experiment -- prefer these here."
+        ),
+    )
+    p.add_argument(
+        "--n-reps", type=int, default=1,
+        help=(
+            "2026-09-13: a single training seed can look like 'personalization "
+            "doesn't work' when it's actually just gated-training optimization "
+            "variance (see thread 2's stability investigation). Repeats the "
+            "full train+score pipeline this many times with different seeds "
+            "and train/val/test splits, reporting mean +/- std rather than one "
+            "point estimate."
+        ),
+    )
     p.add_argument("--selection", choices=["nosmooth", "smooth"], default="smooth")
     p.add_argument("--n-subgroups", type=int, default=4)
     p.add_argument("--true-features-per-subgroup", type=int, default=8)
@@ -357,17 +382,12 @@ def main() -> None:
         subgroup_labels = assign_synthetic_subgroups(
             X, n_subgroups, rng, mode=args.subgroup_assignment, pca_dim=args.kmeans_pca_dim,
         )
+    # Fixed across reps: the ground-truth problem itself (which subgroup each
+    # patient is in, which genes are truly causal for each subgroup). Only
+    # the noisy realization of the outcome and the train/val/test split vary
+    # per rep, so repeats measure optimization/sampling variance around one
+    # fixed problem, not variance in the problem definition itself.
     true_feature_map = assign_true_feature_map(n_genes, n_subgroups, args.true_features_per_subgroup, rng)
-    time, event = generate_synthetic_hazard(
-        X, subgroup_labels, true_feature_map, args.effect_size, args.censoring_rate, rng,
-    )
-    print(f"[synthetic] censoring_rate_actual={1 - event.mean():.3f} (target {args.censoring_rate})", flush=True)
-
-    ss = ShuffleSplit(n_splits=1, test_size=float(args.test_fraction), random_state=int(args.seed))
-    train_all, test_idx = next(ss.split(X))
-    ss2 = ShuffleSplit(n_splits=1, test_size=float(args.val_fraction), random_state=int(args.seed) + 1)
-    rel_train, rel_val = next(ss2.split(train_all))
-    train_idx, val_idx = train_all[rel_train], train_all[rel_val]
 
     configs = _selected_configs(
         args.dataset, results_dir, args.families, [args.selection],
@@ -375,67 +395,109 @@ def main() -> None:
         lambda_scales=[1.0], smooth_smooth_values=None,
     )
 
-    recovery_frames = []
-    cindex_rows = []
-    mean_k_gated = []
+    all_recovery_frames = []
+    all_cindex_rows = []
 
-    for _, cfg in configs.iterrows():
-        label = f"{cfg['family']}_{cfg['selection']}"
-        Xt_tr = sds.as_torch(X[train_idx])
-        A = None
-        if float(cfg["lambda_sample_smooth"]) > 0:
-            A = sds.build_knn_adjacency_csr(Xt_tr, k=int(args.knn_k), pca_dim=50, metric="cosine", symmetrize=True)
-        model, info = sds.run_one_model(
-            Xt_tr=Xt_tr, tt_tr=sds.as_torch(time[train_idx]), et_tr=sds.as_torch(event[train_idx]),
-            Xt_val=sds.as_torch(X[val_idx]), tt_val=sds.as_torch(time[val_idx]), et_val=sds.as_torch(event[val_idx]),
-            Xt_test=sds.as_torch(X[test_idx]), tt_test=sds.as_torch(time[test_idx]), et_test=sds.as_torch(event[test_idx]),
-            input_dim=X.shape[1], A_sample_train=A, device=args.device,
-            lr=float(args.lr), weight_decay=float(args.weight_decay), batch_size=int(args.batch_size),
-            max_epochs=int(args.max_epochs), seed=int(args.seed),
-            gate_type=str(cfg["gate_type"]), gate_sigma=float(cfg["gate_sigma"]),
-            lam=float(cfg["lambda_sparse"]), lambda_sample_smooth=float(cfg["lambda_sample_smooth"]),
-            patience=int(args.patience), temperature=float(cfg["temperature"]),
-            concrete_mode=str(cfg["concrete_mode"]), predictor=str(cfg["predictor"]),
-            gating_hidden_dim=int(cfg["gating_hidden_dim"]), gate_hidden_dropout_p=float(cfg["gate_hidden_dropout_p"]),
-            risk_hidden_dims=tuple(cfg["risk_hidden_dims"]), risk_dropout_p=float(cfg["risk_dropout_p"]),
-            lspin_init_bias=float(cfg["lspin_init_bias"]), gate_weight_decay=float(cfg["gate_weight_decay"]),
+    for rep in range(int(args.n_reps)):
+        rep_seed = int(args.seed) + 1000 * rep
+        rep_rng = np.random.default_rng(rep_seed)
+        print(f"\n[rep {rep}] seed={rep_seed}", flush=True)
+
+        time, event = generate_synthetic_hazard(
+            X, subgroup_labels, true_feature_map, args.effect_size, args.censoring_rate, rep_rng,
         )
-        cindex_rows.append({"method": label, "test_cindex": info.get("test_cindex")})
-        _, _, hard_t, _ = sds.get_gates(
-            model, sds.as_torch(X[test_idx]), device=args.device, hard_threshold=float(args.hard_threshold), batch_size=512,
+        print(f"[rep {rep}] censoring_rate_actual={1 - event.mean():.3f} (target {args.censoring_rate})", flush=True)
+
+        ss = ShuffleSplit(n_splits=1, test_size=float(args.test_fraction), random_state=rep_seed)
+        train_all, test_idx = next(ss.split(X))
+        ss2 = ShuffleSplit(n_splits=1, test_size=float(args.val_fraction), random_state=rep_seed + 1)
+        rel_train, rel_val = next(ss2.split(train_all))
+        train_idx, val_idx = train_all[rel_train], train_all[rel_val]
+
+        mean_k_gated = []
+        for _, cfg in configs.iterrows():
+            label = f"{cfg['family']}_{cfg['selection']}"
+            Xt_tr = sds.as_torch(X[train_idx])
+            A = None
+            if float(cfg["lambda_sample_smooth"]) > 0:
+                A = sds.build_knn_adjacency_csr(Xt_tr, k=int(args.knn_k), pca_dim=50, metric="cosine", symmetrize=True)
+            model, info = sds.run_one_model(
+                Xt_tr=Xt_tr, tt_tr=sds.as_torch(time[train_idx]), et_tr=sds.as_torch(event[train_idx]),
+                Xt_val=sds.as_torch(X[val_idx]), tt_val=sds.as_torch(time[val_idx]), et_val=sds.as_torch(event[val_idx]),
+                Xt_test=sds.as_torch(X[test_idx]), tt_test=sds.as_torch(time[test_idx]), et_test=sds.as_torch(event[test_idx]),
+                input_dim=X.shape[1], A_sample_train=A, device=args.device,
+                lr=float(args.lr), weight_decay=float(args.weight_decay), batch_size=int(args.batch_size),
+                max_epochs=int(args.max_epochs), seed=rep_seed,
+                gate_type=str(cfg["gate_type"]), gate_sigma=float(cfg["gate_sigma"]),
+                lam=float(cfg["lambda_sparse"]), lambda_sample_smooth=float(cfg["lambda_sample_smooth"]),
+                patience=int(args.patience), temperature=float(cfg["temperature"]),
+                concrete_mode=str(cfg["concrete_mode"]), predictor=str(cfg["predictor"]),
+                gating_hidden_dim=int(cfg["gating_hidden_dim"]), gate_hidden_dropout_p=float(cfg["gate_hidden_dropout_p"]),
+                risk_hidden_dims=tuple(cfg["risk_hidden_dims"]), risk_dropout_p=float(cfg["risk_dropout_p"]),
+                lspin_init_bias=float(cfg["lspin_init_bias"]), gate_weight_decay=float(cfg["gate_weight_decay"]),
+            )
+            all_cindex_rows.append({"rep": rep, "method": label, "test_cindex": info.get("test_cindex")})
+            _, _, hard_t, _ = sds.get_gates(
+                model, sds.as_torch(X[test_idx]), device=args.device, hard_threshold=float(args.hard_threshold), batch_size=512,
+            )
+            hard = hard_t.numpy().astype(np.float32)
+            mean_k_gated.append(float(hard.sum(axis=1).mean()))
+            rec = score_recovery(hard, true_feature_map, subgroup_labels[test_idx], n_genes)
+            rec.insert(0, "rep", rep)
+            rec.insert(1, "method", label)
+            all_recovery_frames.append(rec)
+            print(f"[rep {rep}] [{label}] test_cindex={info.get('test_cindex')} mean_k={mean_k_gated[-1]:.1f}", flush=True)
+
+        target_k = int(round(np.mean(mean_k_gated))) if mean_k_gated else args.true_features_per_subgroup * 2
+        coxnet_mask, coxnet_coef, coxnet_val_c = _coxnet_global_selection(
+            X=X, time=time, event=event, train_idx=train_idx, val_idx=val_idx,
+            target_k=target_k, l1_ratio=args.coxnet_l1_ratio, n_alphas=args.coxnet_n_alphas,
         )
-        hard = hard_t.numpy().astype(np.float32)
-        mean_k_gated.append(float(hard.sum(axis=1).mean()))
-        rec = score_recovery(hard, true_feature_map, subgroup_labels[test_idx], n_genes)
-        rec.insert(0, "method", label)
-        recovery_frames.append(rec)
-        print(f"[{label}] test_cindex={info.get('test_cindex')} mean_k={mean_k_gated[-1]:.1f}", flush=True)
+        coxnet_selected_repeated = np.tile(coxnet_mask, (len(test_idx), 1))
+        coxnet_risk_test = ((X[test_idx] - X[train_idx].mean(axis=0)) / (X[train_idx].std(axis=0) + 1e-8)) @ coxnet_coef
+        coxnet_test_c = sds.concordance_index(coxnet_risk_test, time[test_idx], event[test_idx])
+        # Fixed label across reps (target_k varies rep to rep since it tracks
+        # that rep's gated mean_k) so groupby("method") aggregates correctly
+        # across reps instead of treating each rep's k as a different method.
+        coxnet_label = "coxnet_global"
+        all_cindex_rows.append({"rep": rep, "method": coxnet_label, "test_cindex": coxnet_test_c, "target_k": target_k})
+        rec = score_recovery(coxnet_selected_repeated, true_feature_map, subgroup_labels[test_idx], n_genes)
+        rec.insert(0, "rep", rep)
+        rec.insert(1, "method", coxnet_label)
+        rec["target_k"] = target_k
+        all_recovery_frames.append(rec)
+        print(f"[rep {rep}] [coxnet_global] test_cindex={coxnet_test_c:.4f} k={int(coxnet_mask.sum())} (target {target_k})", flush=True)
 
-    target_k = int(round(np.mean(mean_k_gated))) if mean_k_gated else args.true_features_per_subgroup * 2
-    coxnet_mask, coxnet_coef, coxnet_val_c = _coxnet_global_selection(
-        X=X, time=time, event=event, train_idx=train_idx, val_idx=val_idx,
-        target_k=target_k, l1_ratio=args.coxnet_l1_ratio, n_alphas=args.coxnet_n_alphas,
-    )
-    coxnet_selected_repeated = np.tile(coxnet_mask, (len(test_idx), 1))
-    coxnet_risk_test = ((X[test_idx] - X[train_idx].mean(axis=0)) / (X[train_idx].std(axis=0) + 1e-8)) @ coxnet_coef
-    coxnet_test_c = sds.concordance_index(coxnet_risk_test, time[test_idx], event[test_idx])
-    cindex_rows.append({"method": f"coxnet_global_matched_k{target_k}", "test_cindex": coxnet_test_c})
-    rec = score_recovery(coxnet_selected_repeated, true_feature_map, subgroup_labels[test_idx], n_genes)
-    rec.insert(0, "method", f"coxnet_global_matched_k{target_k}")
-    recovery_frames.append(rec)
-    print(f"[coxnet_global] test_cindex={coxnet_test_c:.4f} k={int(coxnet_mask.sum())} (target {target_k})", flush=True)
-
-    recovery = pd.concat(recovery_frames, ignore_index=True)
+    recovery = pd.concat(all_recovery_frames, ignore_index=True)
     recovery.to_csv(outdir / "synthetic_recovery_by_subgroup.csv", index=False)
 
-    overall = recovery.groupby("method")[["precision_mean", "recall_mean", "jaccard_mean"]].mean().reset_index()
+    # Aggregate per (method, rep) first (already subgroup-averaged inside
+    # score_recovery per rep would double-count subgroup sizes unevenly, so
+    # weight by n_patients within a rep, then average across reps).
+    def _weighted(df):
+        w = df["n_patients"]
+        out = {}
+        for col in ["precision_mean", "recall_mean", "jaccard_mean"]:
+            out[col] = float(np.average(df[col], weights=w))
+        return pd.Series(out)
+
+    per_rep = recovery.groupby(["method", "rep"]).apply(_weighted, include_groups=False).reset_index()
+    overall = (
+        per_rep.groupby("method")[["precision_mean", "recall_mean", "jaccard_mean"]]
+        .agg(["mean", "std"])
+    )
+    overall.columns = ["_".join(c) for c in overall.columns.to_flat_index()]
+    overall = overall.reset_index()
+    overall["n_reps"] = int(args.n_reps)
     overall.to_csv(outdir / "synthetic_recovery_overall.csv", index=False)
 
-    cindex_df = pd.DataFrame(cindex_rows)
+    cindex_df = pd.DataFrame(all_cindex_rows)
+    cindex_summary = cindex_df.groupby("method")["test_cindex"].agg(["mean", "std"]).reset_index()
     cindex_df.to_csv(outdir / "synthetic_sanity_check_cindex.csv", index=False)
+    cindex_summary.to_csv(outdir / "synthetic_sanity_check_cindex_summary.csv", index=False)
 
-    print(overall.to_string(), flush=True)
-    print(cindex_df.to_string(), flush=True)
+    print("\n" + overall.to_string(), flush=True)
+    print("\n" + cindex_summary.to_string(), flush=True)
     print(f"\n[done] wrote {outdir}", flush=True)
 
 
