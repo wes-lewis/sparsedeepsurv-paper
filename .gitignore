@@ -47,6 +47,19 @@ extras/data/runs/ch3_brca_broad_v2_recovered_20260326/**
 !extras/data/runs/ch3_brca_broad_v2_recovered_20260326/*.png
 !extras/data/runs/ch3_brca_broad_v2_recovered_20260326/*.csv
 
+# ch3-linear-broad-redo branch: full redo covering L-LSPIN/L-Concrete,
+# previously missing from the broad sweep entirely (see
+# extras/analyses/ch3_broad_gentle_v2.py module docstring)
+!extras/data/runs/ch3_kipan_broad_gentle_v2_full/
+extras/data/runs/ch3_kipan_broad_gentle_v2_full/**
+!extras/data/runs/ch3_kipan_broad_gentle_v2_full/*.png
+!extras/data/runs/ch3_kipan_broad_gentle_v2_full/*.csv
+
+!extras/data/runs/ch3_brca_broad_gentle_v2_full/
+extras/data/runs/ch3_brca_broad_gentle_v2_full/**
+!extras/data/runs/ch3_brca_broad_gentle_v2_full/*.png
+!extras/data/runs/ch3_brca_broad_gentle_v2_full/*.csv
+
 # keep worker partials, checkpoints, and legacy duplicate labels out of the
 # publication branch even inside preserved run trees
 extras/data/runs/**/_partial*/**
