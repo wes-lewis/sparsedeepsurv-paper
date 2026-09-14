@@ -44,6 +44,23 @@ Outputs include separate broad multiplots for:
 """
 from __future__ import annotations
 
+import os
+
+# 2026-09-13: must be set before numpy/sklearn/torch import. This script had
+# no thread-count limit at all (unlike other analysis scripts in this repo
+# that explicitly guard against OpenBLAS/OpenMP thread-pool contention from
+# repeated PCA/kNN calls) -- each worker process was spawning ~83 threads
+# unconstrained. On a shared 64-core box already at load average 130+ from
+# other users' jobs, that's real, avoidable scheduling overhead, especially
+# for BRCA's heavier PCA-based affinity-graph construction over ~24k
+# features. Each fit here only ever processes one config at a time, so
+# single-threaded BLAS costs essentially nothing in per-call latency while
+# removing a lot of contention.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+
 import argparse
 import math
 import sys
