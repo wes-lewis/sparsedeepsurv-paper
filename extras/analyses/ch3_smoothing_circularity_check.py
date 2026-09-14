@@ -133,6 +133,22 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--weight-decay", type=float, default=1e-5)
     p.add_argument("--hard-threshold", type=float, default=0.5)
     p.add_argument("--gene-rate-threshold", type=float, default=0.10)
+    p.add_argument(
+        "--gate-sigma-multiplier", type=float, default=1.0,
+        help=(
+            "2026-09-14: LSPIN's hard-clamp gate has a known early-lock-in "
+            "dead-zone issue (thread 2's rescue investigation) that gate_sigma "
+            "partially corrects elsewhere. Hypothesis here: if lock-in "
+            "dominates over the smoothing gradient's pull, patients could "
+            "converge to reproducible-LOOKING but molecularly-arbitrary "
+            "selections regardless of the graph's real content -- exactly "
+            "the failure pattern found in the base circularity check for "
+            "LSPIN. Widening gate_sigma gives the smoothing gradient more "
+            "room to actually influence convergence via the real graph. "
+            "Applied to gate_sigma for LSPIN-type families only (confirmed "
+            "no-op for Concrete-type gates elsewhere in this repo)."
+        ),
+    )
     p.add_argument("--results-dir", type=Path, default=None)
     p.add_argument("--data-dir", type=Path, default=None)
     p.add_argument("--outdir", type=Path, default=None)
@@ -267,8 +283,13 @@ def main() -> None:
             lambda_scale_families=[family], lambda_scale_selections=["nosmooth"],
             lambda_scales=[1.0], smooth_smooth_values=None,
         )
-        cfg_smooth = configs_smooth.iloc[0]
-        cfg_nosmooth = configs_nosmooth.iloc[0]
+        cfg_smooth = configs_smooth.iloc[0].copy()
+        cfg_nosmooth = configs_nosmooth.iloc[0].copy()
+        if str(cfg_smooth["gate_type"]) == "lspin_tf" and float(args.gate_sigma_multiplier) != 1.0:
+            cfg_smooth["gate_sigma"] = float(cfg_smooth["gate_sigma"]) * float(args.gate_sigma_multiplier)
+            cfg_nosmooth["gate_sigma"] = float(cfg_nosmooth["gate_sigma"]) * float(args.gate_sigma_multiplier)
+            print(f"[{family}] gate_sigma x{args.gate_sigma_multiplier} -> "
+                  f"smooth={cfg_smooth['gate_sigma']:.4g} nosmooth={cfg_nosmooth['gate_sigma']:.4g}", flush=True)
 
         rng = np.random.default_rng(int(args.seed))
         Xt_tr_full = sds.as_torch(X[train_idx])
